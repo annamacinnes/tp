@@ -142,14 +142,6 @@
         "project-addressbook-level-3": "Project: AddressBook Level 3"
       },
       "headingKeywords": {}
-    },
-    {
-      "src": "team/randylim.md",
-      "title": "Randy Lim's Project Portfolio Page",
-      "headings": {
-        "project-clinicconnect": "Project: ClinicConnect"
-      },
-      "headingKeywords": {}
     }
   ]
 }
