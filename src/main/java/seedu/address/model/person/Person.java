@@ -20,6 +20,7 @@ public class Person {
     private final Name name;
     private final Phone phone;
     private final Email email;
+    private final Ic ic;
 
     // Data fields
     private final Address address;
@@ -28,13 +29,14 @@ public class Person {
     /**
      * Every field must be present and not null.
      */
-    public Person(Name name, Phone phone, Email email, Address address, Set<Tag> tags) {
-        requireAllNonNull(name, phone, email, address, tags);
+    public Person(Name name, Phone phone, Email email, Address address, Set<Tag> tags, Ic ic) {
+        requireAllNonNull(name, phone, email, address, tags, ic);
         this.name = name;
         this.phone = phone;
         this.email = email;
         this.address = address;
         this.tags.addAll(tags);
+        this.ic = ic;
     }
 
     public Name getName() {
@@ -44,6 +46,7 @@ public class Person {
     public Phone getPhone() {
         return phone;
     }
+
 
     public Email getEmail() {
         return email;
@@ -61,8 +64,12 @@ public class Person {
         return Collections.unmodifiableSet(tags);
     }
 
+    public Ic getIc() {
+        return ic;
+    }
+
     /**
-     * Returns true if both persons have the same name.
+     * Returns true if both persons have the same ic.
      * This defines a weaker notion of equality between two persons.
      */
     public boolean isSamePerson(Person otherPerson) {
@@ -71,7 +78,7 @@ public class Person {
         }
 
         return otherPerson != null
-                && otherPerson.getName().equals(getName());
+                && otherPerson.getIc().equals(getIc());
     }
 
     /**
@@ -94,13 +101,14 @@ public class Person {
                 && phone.equals(otherPerson.phone)
                 && email.equals(otherPerson.email)
                 && address.equals(otherPerson.address)
-                && tags.equals(otherPerson.tags);
+                && tags.equals(otherPerson.tags)
+                && ic.equals(otherPerson.ic);
     }
 
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(name, phone, email, address, tags);
+        return Objects.hash(name, phone, email, address, tags, ic);
     }
 
     @Override
@@ -111,6 +119,7 @@ public class Person {
                 .add("email", email)
                 .add("address", address)
                 .add("tags", tags)
+                .add("ic", ic)
                 .toString();
     }
 
