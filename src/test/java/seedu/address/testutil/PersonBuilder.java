@@ -98,6 +98,9 @@ public class PersonBuilder {
         return new Person(name, phone, email, address, tags, urgencyLevel);
     }
 
+    /**
+     * Sets the {@code UrgencyLevel} of the {@code Person} that we are building.
+     */
     public PersonBuilder withUrgencyLevel(String urgencyLevel) {
         this.urgencyLevel = new UrgencyLevel(urgencyLevel);
         return this;

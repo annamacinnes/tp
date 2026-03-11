@@ -101,7 +101,8 @@ public class EditCommand extends Command {
         Email updatedEmail = editPersonDescriptor.getEmail().orElse(personToEdit.getEmail());
         Address updatedAddress = editPersonDescriptor.getAddress().orElse(personToEdit.getAddress());
         Set<Tag> updatedTags = editPersonDescriptor.getTags().orElse(personToEdit.getTags());
-        UrgencyLevel updatedUrgencyLevel = editPersonDescriptor.getUrgencyLevel().orElse(personToEdit.getUrgencyLevel());
+        UrgencyLevel updatedUrgencyLevel = editPersonDescriptor.getUrgencyLevel()
+                .orElse(personToEdit.getUrgencyLevel());
 
         return new Person(updatedName, updatedPhone, updatedEmail, updatedAddress, updatedTags, updatedUrgencyLevel);
     }

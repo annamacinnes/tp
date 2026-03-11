@@ -107,7 +107,8 @@ class JsonAdaptedPerson {
         final Address modelAddress = new Address(address);
 
         if (urgencyLevel == null) {
-            throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT, UrgencyLevel.class.getSimpleName()));
+            throw new IllegalValueException(String.format(MISSING_FIELD_MESSAGE_FORMAT,
+                    UrgencyLevel.class.getSimpleName()));
         }
         if (!UrgencyLevel.isValidUrgencyLevel(urgencyLevel)) {
             throw new IllegalValueException(UrgencyLevel.MESSAGE_CONSTRAINTS);

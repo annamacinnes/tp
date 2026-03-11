@@ -13,8 +13,8 @@ import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
 import seedu.address.model.person.Phone;
-import seedu.address.model.tag.Tag;
 import seedu.address.model.person.UrgencyLevel;
+import seedu.address.model.tag.Tag;
 
 /**
  * Contains utility methods used for parsing strings in the various *Parser classes.
@@ -123,6 +123,12 @@ public class ParserUtil {
         return tagSet;
     }
 
+    /**
+     * Parses a {@code String urgencyLevel} into an {@code UrgencyLevel}.
+     * Leading and trailing whitespaces will be trimmed.
+     *
+     * @throws ParseException if the given {@code urgencyLevel} is invalid.
+     */
     public static UrgencyLevel parseUrgencyLevel(String urgencyLevel) throws ParseException {
         requireNonNull(urgencyLevel);
         String trimmedUrgencyLevel = urgencyLevel.trim();

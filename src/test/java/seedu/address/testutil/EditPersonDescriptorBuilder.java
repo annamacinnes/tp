@@ -82,6 +82,9 @@ public class EditPersonDescriptorBuilder {
         return this;
     }
 
+    /**
+     * Sets the {@code UrgencyLevel} of the {@code EditPersonDescriptor} that we are building.
+     */
     public EditPersonDescriptorBuilder withUrgencyLevel(String urgencyLevel) {
         descriptor.setUrgencyLevel(new seedu.address.model.person.UrgencyLevel(urgencyLevel));
         return this;
