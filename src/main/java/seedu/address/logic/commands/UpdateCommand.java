@@ -138,7 +138,7 @@ public class UpdateCommand extends Command {
     public String toString() {
         return new ToStringBuilder(this)
                 .add("index", index)
-                .add("editPersonDescriptor", updatePersonDescriptor)
+                .add("updatePersonDescriptor", updatePersonDescriptor)
                 .toString();
     }
 
