@@ -16,13 +16,11 @@ import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
+import javafx.collections.ObservableList;
 import seedu.address.commons.core.GuiSettings;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
-import seedu.address.testutil.AddressBookBuilder;
-import seedu.address.testutil.TypicalPersons;
-
-import javafx.collections.ObservableList;
 import seedu.address.model.person.Person;
+import seedu.address.testutil.AddressBookBuilder;
 
 public class ModelManagerTest {
 
@@ -119,8 +117,8 @@ public class ModelManagerTest {
         ObservableList<Person> sortedList = modelManager.getFilteredPersonList();
 
         assertEquals(DANIEL, sortedList.get(0)); // 1st: Extreme
-        assertEquals(ELLE, sortedList.get(1));   // 2nd: High
-        assertEquals(ALICE, sortedList.get(2));  // 3rd: Low
+        assertEquals(ELLE, sortedList.get(1)); // 2nd: High
+        assertEquals(ALICE, sortedList.get(2)); // 3rd: Low
     }
 
     @Test
