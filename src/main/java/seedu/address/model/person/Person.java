@@ -20,23 +20,34 @@ public class Person {
     private final Name name;
     private final Phone phone;
     private final Email email;
+    private final Ic ic;
 
     // Data fields
     private final Address address;
     private final Set<Tag> tags = new HashSet<>();
     private final Symptoms symptoms;
+    private final UrgencyLevel urgencyLevel;
 
     /**
      * Every field must be present and not null.
      */
-    public Person(Name name, Phone phone, Email email, Address address, Set<Tag> tags, Symptoms symptoms) {
-        requireAllNonNull(name, phone, email, address, tags, symptoms);
+    public Person(Name name,
+                  Phone phone,
+                  Email email,
+                  Address address,
+                  Set<Tag> tags,
+                  Ic ic,
+                  UrgencyLevel urgencyLevel,
+                  Symptoms symptoms) {
+        requireAllNonNull(name, phone, email, address, tags, ic, urgencyLevel);
         this.name = name;
         this.phone = phone;
         this.email = email;
         this.address = address;
         this.tags.addAll(tags);
         this.symptoms = symptoms;
+        this.ic = ic;
+        this.urgencyLevel = urgencyLevel;
     }
 
     public Name getName() {
@@ -63,12 +74,20 @@ public class Person {
         return Collections.unmodifiableSet(tags);
     }
 
+    public Ic getIc() {
+        return ic;
+    }
+
+    public UrgencyLevel getUrgencyLevel() {
+        return urgencyLevel;
+    }
+
     public Symptoms getSymptoms() {
         return symptoms;
     }
 
     /**
-     * Returns true if both persons have the same name.
+     * Returns true if both persons have the same ic.
      * This defines a weaker notion of equality between two persons.
      */
     public boolean isSamePerson(Person otherPerson) {
@@ -77,7 +96,7 @@ public class Person {
         }
 
         return otherPerson != null
-                && otherPerson.getName().equals(getName());
+                && otherPerson.getIc().equals(getIc());
     }
 
     /**
@@ -101,13 +120,15 @@ public class Person {
                 && email.equals(otherPerson.email)
                 && address.equals(otherPerson.address)
                 && tags.equals(otherPerson.tags)
+                && ic.equals(otherPerson.ic)
+                && urgencyLevel.equals(otherPerson.urgencyLevel)
                 && symptoms.equals(otherPerson.symptoms);
     }
 
     @Override
     public int hashCode() {
         // use this method for custom fields hashing instead of implementing your own
-        return Objects.hash(name, phone, email, address, tags, symptoms);
+        return Objects.hash(name, phone, email, address, tags, ic, urgencyLevel, symptoms);
     }
 
     @Override
@@ -118,6 +139,8 @@ public class Person {
                 .add("email", email)
                 .add("address", address)
                 .add("tags", tags)
+                .add("ic", ic)
+                .add("urgencyLevel", urgencyLevel)
                 .add("symptoms", symptoms)
                 .toString();
     }
