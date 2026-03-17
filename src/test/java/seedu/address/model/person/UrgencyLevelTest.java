@@ -26,18 +26,29 @@ public class UrgencyLevelTest {
         // null urgency level
         assertThrows(NullPointerException.class, () -> UrgencyLevel.isValidUrgencyLevel(null));
 
-        // invalid urgency levels
+        // blank/whitespace urgency levels
         assertFalse(UrgencyLevel.isValidUrgencyLevel("")); // empty string
         assertFalse(UrgencyLevel.isValidUrgencyLevel(" ")); // spaces only
+        assertFalse(UrgencyLevel.isValidUrgencyLevel(" high ")); // leading/trailing spaces
+        assertFalse(UrgencyLevel.isValidUrgencyLevel("low ")); // trailing space
+
+        // invalid urgency levels
         assertFalse(UrgencyLevel.isValidUrgencyLevel("urgent")); // not a valid level
         assertFalse(UrgencyLevel.isValidUrgencyLevel("12345")); // numeric
+        assertFalse(UrgencyLevel.isValidUrgencyLevel("extreme!")); // contains symbols
 
         // valid urgency levels
         assertTrue(UrgencyLevel.isValidUrgencyLevel("low"));
-        assertTrue(UrgencyLevel.isValidUrgencyLevel("lOw")); // case-insensitive
         assertTrue(UrgencyLevel.isValidUrgencyLevel("moderate"));
         assertTrue(UrgencyLevel.isValidUrgencyLevel("high"));
         assertTrue(UrgencyLevel.isValidUrgencyLevel("extreme"));
+
+        // valid urgency levels (case-insensitive)
+        assertTrue(UrgencyLevel.isValidUrgencyLevel("LOW"));
+        assertTrue(UrgencyLevel.isValidUrgencyLevel("lOw"));
+        assertTrue(UrgencyLevel.isValidUrgencyLevel("MoDeRaTe"));
+        assertTrue(UrgencyLevel.isValidUrgencyLevel("HIGH"));
+        assertTrue(UrgencyLevel.isValidUrgencyLevel("EXTREME"));
     }
 
     @Test
@@ -47,6 +58,10 @@ public class UrgencyLevelTest {
         assertEquals(2, new UrgencyLevel("moderate").getPriorityValue());
         assertEquals(3, new UrgencyLevel("high").getPriorityValue());
         assertEquals(4, new UrgencyLevel("extreme").getPriorityValue());
+
+        // Tests that case-insensitivity still maps to the correct priority
+        assertEquals(4, new UrgencyLevel("eXtReMe").getPriorityValue());
+        assertEquals(3, new UrgencyLevel("HIGH").getPriorityValue());
     }
 
     @Test
@@ -56,6 +71,10 @@ public class UrgencyLevelTest {
 
         // same values -> returns true
         assertTrue(lowUrgency.equals(new UrgencyLevel("low")));
+
+        // case-insensitive equality -> returns true
+        assertTrue(new UrgencyLevel("high").equals(new UrgencyLevel("HIGH")));
+        assertTrue(new UrgencyLevel("eXtrEmE").equals(new UrgencyLevel("extreme")));
 
         // same object -> returns true
         assertTrue(lowUrgency.equals(lowUrgency));
@@ -79,14 +98,23 @@ public class UrgencyLevelTest {
         // same value -> same hashcode
         assertEquals(extreme.hashCode(), extremeCopy.hashCode());
 
+        // case-insensitivity -> same hashcode
+        UrgencyLevel mixedCase = new UrgencyLevel("eXtReMe");
+        assertEquals(extreme.hashCode(), mixedCase.hashCode());
+
         // different value -> different hashcode
         assertNotEquals(extreme.hashCode(), low.hashCode());
     }
 
     @Test
     public void toStringMethod() {
-        // Ensures the display string matches the internal enum name
+        // Ensures the display string matches the internal enum name completely
         assertEquals("LOW", new UrgencyLevel("low").toString());
+        assertEquals("MODERATE", new UrgencyLevel("moderate").toString());
+        assertEquals("HIGH", new UrgencyLevel("high").toString());
         assertEquals("EXTREME", new UrgencyLevel("extreme").toString());
+
+        // Ensures weird casing is normalized in the toString
+        assertEquals("HIGH", new UrgencyLevel("hIgH").toString());
     }
 }
