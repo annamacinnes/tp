@@ -317,7 +317,7 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 | `*`      | beginner user      | view a brief onboarding walkthrough                            | know what the app can do.                                                       |
 | `*`      | beginner user      | search for a patient by name or identifier                     | quickly find an existing contact.                                               |
 | `*`      | beginner user      | undo recent actions                                            | feel safe exploring the app.                                                    |
-| `*`      | expert user        | organize patients using tags                                   | categorise patients based on clinical priority or special needs.                |
+| `*`      | expert user        | organize patients using symptoms                                   | categorise patients based on clinical priority or special needs.                |
 | `*`      | beginner user      | view what actions I have recently made                         | understand the current state of the database more accurately.                   |
 | `*`      | expert user        | use command shortcuts or aliases when entering patient details | maximize my efficiency in typing during peak hours.                             |
 | `*`      | expert user        | customise views or defaults                                    | the app matches my working habits.                                              |
