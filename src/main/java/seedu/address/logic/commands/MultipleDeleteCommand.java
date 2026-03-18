@@ -2,7 +2,6 @@ package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -22,9 +21,9 @@ public class MultipleDeleteCommand extends DeleteCommand {
             + "Parameters: INDEX,INDEX[,INDEX,...] (must be unique positive integers)\n"
             + "Example: " + COMMAND_WORD + " 1,2,4";
 
-    private final Set<Index> targetIndices;
+    private final Index[] targetIndices;
 
-    public MultipleDeleteCommand(Set<Index> targetIndices) {
+    public MultipleDeleteCommand(Index... targetIndices) {
         this.targetIndices = targetIndices;
     }
 
@@ -37,15 +36,16 @@ public class MultipleDeleteCommand extends DeleteCommand {
             throw new CommandException(Messages.getErrorMessageForNoPersons(COMMAND_WORD));
         }
 
-        Set<Person> personsToDelete = new HashSet<>();
-        for (Index targetIndex : targetIndices) {
+        Person[] personsToDelete = new Person[targetIndices.length];
+        for (int i = 0; i < targetIndices.length; i++) {
+            Index targetIndex = targetIndices[i];
             if (targetIndex.getZeroBased() >= lastShownList.size()) {
                 Index lastIndex = Index.fromOneBased(model.getFilteredPersonList().size());
                 throw new CommandException(Messages.getErrorMessageForInvalidIndices(lastIndex));
             }
 
             Person personToDelete = lastShownList.get(targetIndex.getZeroBased());
-            personsToDelete.add(personToDelete);
+            personsToDelete[i] = personToDelete;
         }
 
         StringBuilder deletedPersonsString = new StringBuilder();
@@ -58,6 +58,6 @@ public class MultipleDeleteCommand extends DeleteCommand {
 
     @Override
     public Set<Index> getTargetIndicesAsSet() {
-        return targetIndices;
+        return Set.of(targetIndices);
     }
 }

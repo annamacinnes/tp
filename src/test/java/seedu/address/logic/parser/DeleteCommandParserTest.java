@@ -5,8 +5,6 @@ import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailur
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
 
-import java.util.Set;
-
 import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.index.Index;
@@ -39,8 +37,8 @@ public class DeleteCommandParserTest {
     @Test
     public void parse_validArgsMultipleIndices_returnsDeleteCommand() {
         assertParseSuccess(parser, "1,2,3",
-                new MultipleDeleteCommand(Set.of(INDEX_FIRST_PERSON,
-                        Index.fromOneBased(2), Index.fromOneBased(3))));
+                new MultipleDeleteCommand(new Index[]{ INDEX_FIRST_PERSON,
+                        Index.fromOneBased(2), Index.fromOneBased(3) }));
     }
 
     @Test

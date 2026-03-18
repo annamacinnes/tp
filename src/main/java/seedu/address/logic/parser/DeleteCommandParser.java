@@ -65,18 +65,19 @@ public class DeleteCommandParser implements Parser<DeleteCommand> {
         }
 
         String[] indexStrings = matcher.group("indices").split(MULTIPLE_INDICES_DELIMITER);
-        Set<Index> indices = new HashSet<>();
+        Index[] indices = new Index[indexStrings.length];
+        Set<Index> seenIndices = new HashSet<>();
         Set<Index> duplicateIndices = new HashSet<>();
         for (int i = 0; i < indexStrings.length; i++) {
             try {
-                Index index = ParserUtil.parseIndex(indexStrings[i].trim());
-                boolean isUnique = indices.add(index);
-                if (!isUnique) {
-                    duplicateIndices.add(index);
-                }
+                indices[i] = ParserUtil.parseIndex(indexStrings[i].trim());
             } catch (ParseException pe) {
                 throw new ParseException(
                         String.format(MESSAGE_INVALID_COMMAND_FORMAT, MultipleDeleteCommand.MESSAGE_USAGE), pe);
+            }
+
+            if (!seenIndices.add(indices[i])) {
+                duplicateIndices.add(indices[i]);
             }
         }
 
