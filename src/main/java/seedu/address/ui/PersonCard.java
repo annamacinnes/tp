@@ -20,8 +20,6 @@ public class PersonCard extends UiPart<Region> {
      * Note: Certain keywords such as "location" and "resources" are reserved keywords in JavaFX.
      * As a consequence, UI elements' variable names cannot be set to such keywords
      * or an exception will be thrown by JavaFX during runtime.
-     *
-     * @see <a href="https://github.com/se-edu/addressbook-level4/issues/336">The issue on AddressBook level 4</a>
      */
 
     public final Person person;
@@ -47,6 +45,8 @@ public class PersonCard extends UiPart<Region> {
 
     /**
      * Creates a {@code PersonCard} with the given {@code Person} and index to display.
+     * * @param person The person object containing clinical and personal data.
+     * @param displayedIndex The index of the person in the filtered list.
      */
     public PersonCard(Person person, int displayedIndex) {
         super(FXML);
@@ -60,8 +60,8 @@ public class PersonCard extends UiPart<Region> {
         // Map the new medical fields to the UI
         ic.setText("NRIC: " + person.getIc().value);
 
-        // Clinical Details: Urgency Level styling and text
-        setUrgencyStyle(person);
+        // Clinical Details: Apply styling using the refactored method
+        setUrgencyStyle(person.getUrgencyLevel().getStyleClass(), person.getUrgencyLevel().toString());
 
         person.getTags().stream()
                 .sorted(Comparator.comparing(tag -> tag.tagName))
@@ -70,21 +70,21 @@ public class PersonCard extends UiPart<Region> {
 
     /**
      * Sets the text and dynamic CSS styling for the urgency level label.
+     * This method follows the "Single Responsibility" principle by taking only the
+     * specific data strings needed for styling.
+     * * @param styleClass The CSS class to apply (e.g., "urgency-high").
+     * @param displayText The raw level string to display (e.g., "HIGH").
      */
-    private void setUrgencyStyle(Person person) {
-        String urgencyValue = person.getUrgencyLevel().getValue().toLowerCase();
+    private void setUrgencyStyle(String styleClass, String displayText) {
+        // Format display text for better UI readability (e.g., "EXTREME" -> "Extreme")
+        String formattedText = displayText.substring(0, 1).toUpperCase()
+                + displayText.substring(1).toLowerCase();
+        urgencyLevel.setText(formattedText);
 
-        // Set display text with first letter capitalized (e.g., "Moderate")
-        urgencyLevel.setText(urgencyValue.substring(0, 1).toUpperCase() + urgencyValue.substring(1));
-
-        // Clear existing style classes to prevent color stacking when cells are reused in ListView
+        // Reset style classes to ensure clean state during JavaFX cell reuse
         urgencyLevel.getStyleClass().clear();
 
-        // Add back the base 'label' style plus our custom urgency styling classes
-        urgencyLevel.getStyleClass().addAll(
-                "label",
-                "urgency-badge",
-                "urgency-" + urgencyValue
-        );
+        // "label" is the base JavaFX style; "urgency-badge" is your custom shared styling
+        urgencyLevel.getStyleClass().addAll("label", "urgency-badge", styleClass);
     }
 }

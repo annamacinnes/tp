@@ -42,14 +42,17 @@ public class ModelManager implements Model {
         // 2. Wrap FilteredList in SortedList
         sortedPersons = new SortedList<>(filteredPersons);
 
-        // 3. Set sorting: Higher priorityValue (Extreme) goes to index 0
+        // 3. Set sorting: Higher urgency priority first, then IC as a deterministic tie-breaker
         sortedPersons.setComparator((p1, p2) -> {
-            int priority1 = p1.getUrgencyLevel().getPriorityValue();
-            int priority2 = p2.getUrgencyLevel().getPriorityValue();
-            if (priority1 != priority2) {
-                return Integer.compare(priority2, priority1);
+            // Uses the Comparable implementation from UrgencyLevel
+            int urgencyCompare = p1.getUrgencyLevel().compareTo(p2.getUrgencyLevel());
+
+            if (urgencyCompare != 0) {
+                return urgencyCompare;
             }
-            return p1.getName().fullName.compareToIgnoreCase(p2.getName().fullName);
+
+            // Tie-breaker: Use IC value (more unique and secure than Name)
+            return p1.getIc().value.compareTo(p2.getIc().value);
         });
     }
 
