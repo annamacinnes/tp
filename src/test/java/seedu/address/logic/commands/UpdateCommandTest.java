@@ -200,6 +200,54 @@ public class UpdateCommandTest {
     }
 
     @Test
+    public void execute_appendNoteToNoteWithExistingContent_success() {
+        // Covers the "False" branch of line 142 (existingNotesText is NOT empty)
+        Person personToUpdate = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+
+        // Ensure the person definitely has existing notes
+        Person personWithNotes = new PersonBuilder(personToUpdate).withNotes("Initial Note").build();
+        model.setPerson(personToUpdate, personWithNotes);
+
+        String textToAppend = "Second Note";
+        UpdatePersonDescriptor descriptor = new UpdatePersonDescriptorBuilder()
+                .withNotesToAppend(textToAppend).build();
+        UpdateCommand updateCommand = new UpdateCommand(INDEX_FIRST_PERSON, descriptor);
+
+        // This forces the "else" block (line 144) to run: combinedText = existing + "\n" + append
+        String expectedNote = "Initial Note" + "\n" + textToAppend;
+        Person editedPerson = new PersonBuilder(personWithNotes).withNotes(expectedNote).build();
+
+        String expectedMessage = String.format(UpdateCommand.MESSAGE_UPDATE_PERSON_SUCCESS,
+                Messages.format(editedPerson));
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setPerson(personWithNotes, editedPerson);
+
+        assertCommandSuccess(updateCommand, model, expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_appendNoteToNoteWithDash_success() {
+        // Covers the "existingNotesText.equals("-")" branch of line 142
+        Person personToUpdate = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+        Person personWithDash = new PersonBuilder(personToUpdate).withNotes("-").build();
+        model.setPerson(personToUpdate, personWithDash);
+
+        String textToAppend = "Actual Note Content";
+        UpdatePersonDescriptor descriptor = new UpdatePersonDescriptorBuilder()
+                .withNotesToAppend(textToAppend).build();
+        UpdateCommand updateCommand = new UpdateCommand(INDEX_FIRST_PERSON, descriptor);
+
+        // Since original was "-", it should just become the text (no leading newline)
+        Person editedPerson = new PersonBuilder(personWithDash).withNotes(textToAppend).build();
+        String expectedMessage = String.format(UpdateCommand.MESSAGE_UPDATE_PERSON_SUCCESS,
+                Messages.format(editedPerson));
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setPerson(personWithDash, editedPerson);
+
+        assertCommandSuccess(updateCommand, model, expectedMessage, expectedModel);
+    }
+
+    @Test
     public void equals() {
         final UpdateCommand standardCommand = new UpdateCommand(INDEX_FIRST_PERSON, DESC_AMY);
 
