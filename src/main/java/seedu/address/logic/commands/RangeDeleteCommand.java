@@ -46,22 +46,9 @@ public class RangeDeleteCommand extends DeleteCommand {
             throw new CommandException(Messages.getErrorMessageForNoPersons(COMMAND_WORD));
         }
 
-        if (startIndex.getZeroBased() >= lastShownList.size() || endIndex.getZeroBased() >= lastShownList.size()) {
-            Index lastIndex = Index.fromOneBased(model.getFilteredPersonList().size());
-            throw new CommandException(Messages.getErrorMessageForInvalidIndices(lastIndex));
-        }
+        verifyValidIndices(model, lastShownList);
 
-        if (startIndex.getZeroBased() > endIndex.getZeroBased()) {
-            throw new CommandException(Messages.getErrorMessageForInvalidRangeIndices());
-        }
-
-        int numberOfPersonsToDelete = endIndex.getZeroBased() - startIndex.getZeroBased() + 1;
-        Person[] personsToDelete = new Person[numberOfPersonsToDelete];
-        for (int i = 0; i < numberOfPersonsToDelete; i++) {
-            Person personToDelete = lastShownList.get(startIndex.getZeroBased() + i);
-            personsToDelete[i] = personToDelete;
-        }
-
+        Person[] personsToDelete = getPersonsToDelete(model, lastShownList);
         StringBuilder deletedPersonsString = new StringBuilder();
 
         if (!prefixes.isEmpty()) {
@@ -78,6 +65,27 @@ public class RangeDeleteCommand extends DeleteCommand {
             deletedPersonsString.append("\n" + Messages.format(person));
         }
         return new CommandResult(String.format(MESSAGE_DELETE_PERSON_SUCCESS, deletedPersonsString));
+    }
+
+    private void verifyValidIndices(Model model, List<Person> lastShownList) throws CommandException {
+        if (startIndex.getZeroBased() >= lastShownList.size() || endIndex.getZeroBased() >= lastShownList.size()) {
+            Index lastIndex = Index.fromOneBased(model.getFilteredPersonList().size());
+            throw new CommandException(Messages.getErrorMessageForInvalidIndices(lastIndex));
+        }
+
+        if (startIndex.getZeroBased() > endIndex.getZeroBased()) {
+            throw new CommandException(Messages.getErrorMessageForInvalidRangeIndices());
+        }
+    }
+
+    private Person[] getPersonsToDelete(Model model, List<Person> lastShownList) {
+        int numberOfPersonsToDelete = endIndex.getZeroBased() - startIndex.getZeroBased() + 1;
+        Person[] personsToDelete = new Person[numberOfPersonsToDelete];
+        for (int i = 0; i < numberOfPersonsToDelete; i++) {
+            Person personToDelete = lastShownList.get(startIndex.getZeroBased() + i);
+            personsToDelete[i] = personToDelete;
+        }
+        return personsToDelete;
     }
 
     @Override

@@ -42,18 +42,7 @@ public class MultipleDeleteCommand extends DeleteCommand {
 
         verifyNoDuplicateIndices();
 
-        Person[] personsToDelete = new Person[targetIndices.length];
-        for (int i = 0; i < targetIndices.length; i++) {
-            Index targetIndex = targetIndices[i];
-            if (targetIndex.getZeroBased() >= lastShownList.size()) {
-                Index lastIndex = Index.fromOneBased(model.getFilteredPersonList().size());
-                throw new CommandException(Messages.getErrorMessageForInvalidIndices(lastIndex));
-            }
-
-            Person personToDelete = lastShownList.get(targetIndex.getZeroBased());
-            personsToDelete[i] = personToDelete;
-        }
-
+        Person[] personsToDelete = getPersonsToDelete(model, lastShownList);
         StringBuilder deletedPersonsString = new StringBuilder();
 
         if (!prefixes.isEmpty()) {
@@ -84,6 +73,21 @@ public class MultipleDeleteCommand extends DeleteCommand {
         if (!duplicateIndices.isEmpty()) {
             throw new CommandException(getErrorMessageForDuplicateIndices(duplicateIndices));
         }
+    }
+
+    private Person[] getPersonsToDelete(Model model, List<Person> lastShownList) throws CommandException {
+        Person[] personsToDelete = new Person[targetIndices.length];
+        for (int i = 0; i < targetIndices.length; i++) {
+            Index targetIndex = targetIndices[i];
+            if (targetIndex.getZeroBased() >= lastShownList.size()) {
+                Index lastIndex = Index.fromOneBased(model.getFilteredPersonList().size());
+                throw new CommandException(Messages.getErrorMessageForInvalidIndices(lastIndex));
+            }
+
+            Person personToDelete = lastShownList.get(targetIndex.getZeroBased());
+            personsToDelete[i] = personToDelete;
+        }
+        return personsToDelete;
     }
 
     @Override
