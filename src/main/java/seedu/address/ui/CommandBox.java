@@ -37,7 +37,7 @@ public class CommandBox extends UiPart<Region> {
         commandTextField.textProperty().addListener((unused1, unused2, unused3) -> setStyleToDefault());
         commandTextField.setOnKeyPressed(e -> {
             switch(e.getCode()) {
-            case UP :
+            case UP:
                 displayPreviousCommand();
                 e.consume();
                 break;
@@ -49,7 +49,7 @@ public class CommandBox extends UiPart<Region> {
                 break;
             }
         });
-        commandHistory= new ArrayList<>();
+        commandHistory = new ArrayList<>();
         historyIndex = 0;
         currentInput = "";
     }
