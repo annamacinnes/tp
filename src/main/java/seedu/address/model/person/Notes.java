@@ -51,7 +51,7 @@ public class Notes {
 
         String existingText = this.value;
 
-        if (existingText.trim().isEmpty() || existingText.equals("-")) {
+        if (existingText.trim().isEmpty()) {
             return additionalNotes;
         }
 
