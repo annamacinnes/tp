@@ -290,19 +290,16 @@ public class ParserUtilTest {
                 Index.fromOneBased(3)
         );
 
-        // Standard space separation
-        assertEquals(expectedIndexList, ParserUtil.parseIndices("1 2 3"));
-
-        // Multiple spaces between numbers
-        assertEquals(expectedIndexList, ParserUtil.parseIndices("  1   2    3  "));
+        // STRICT FORMAT: Comma separation without spaces
+        assertEquals(expectedIndexList, ParserUtil.parseIndices("1,2,3"));
     }
 
     @Test
     public void parseIndices_invalidIndexPresent_throwsParseException() {
         // One of the indices is a letter
-        assertThrows(ParseException.class, () -> ParserUtil.parseIndices("1 a 3"));
+        assertThrows(ParseException.class, () -> ParserUtil.parseIndices("1,a,3"));
 
         // One of the indices is zero (caught by parseIndex)
-        assertThrows(ParseException.class, () -> ParserUtil.parseIndices("1 0 3"));
+        assertThrows(ParseException.class, () -> ParserUtil.parseIndices("1,0,3"));
     }
 }

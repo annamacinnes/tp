@@ -25,7 +25,6 @@ import static seedu.address.logic.commands.CommandTestUtil.VALID_SYMPTOM_HUSBAND
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PATIENT_PHONE;
-import static seedu.address.logic.parser.CliSyntax.PREFIX_SYMPTOM;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
@@ -51,7 +50,7 @@ import seedu.address.testutil.UpdatePersonDescriptorBuilder;
 
 public class UpdateCommandParserTest {
 
-    private static final String SYMPTOM_EMPTY = " " + PREFIX_SYMPTOM;
+    private static final String SYMPTOM_EMPTY = " " + CliSyntax.PREFIX_SYMPTOM;
 
     private static final String MESSAGE_INVALID_FORMAT =
             String.format(MESSAGE_INVALID_COMMAND_FORMAT, SingleUpdateCommand.MESSAGE_USAGE);
@@ -60,55 +59,37 @@ public class UpdateCommandParserTest {
 
     @Test
     public void parse_missingParts_failure() {
-        // no index specified ("Amy Bee" contains a space, so it hits our space-blocker)
         assertParseFailure(parser, VALID_NAME_AMY, MESSAGE_INVALID_FORMAT);
-
-        // no field specified
         assertParseFailure(parser, "1", SingleUpdateCommand.MESSAGE_NOT_UPDATED);
-
-        // no index and no field specified (empty string hits the isEmpty() check)
-        assertParseFailure(parser, "", SingleUpdateCommand.MESSAGE_USAGE);
+        assertParseFailure(parser, "", MESSAGE_INVALID_FORMAT);
     }
 
     @Test
     public void parse_invalidPreamble_failure() {
-        // negative index
         assertParseFailure(parser, "-5" + NAME_DESC_AMY, MESSAGE_INVALID_FORMAT);
-
-        // zero index
         assertParseFailure(parser, "0" + NAME_DESC_AMY, MESSAGE_INVALID_FORMAT);
-
-        // invalid arguments being parsed as preamble
         assertParseFailure(parser, "1 some random string", MESSAGE_INVALID_FORMAT);
-
-        // invalid prefix being parsed as preamble
         assertParseFailure(parser, "1 i/ string", MESSAGE_INVALID_FORMAT);
     }
 
     @Test
     public void parse_invalidValue_failure() {
-        assertParseFailure(parser, "1" + INVALID_NAME_DESC, Name.MESSAGE_CONSTRAINTS); // invalid name
-        assertParseFailure(parser, "1" + INVALID_PHONE_DESC, Phone.MESSAGE_CONSTRAINTS); // invalid phone
-        assertParseFailure(parser, "1" + INVALID_EMAIL_DESC, Email.MESSAGE_CONSTRAINTS); // invalid email
-        assertParseFailure(parser, "1" + INVALID_ADDRESS_DESC, Address.MESSAGE_CONSTRAINTS); // invalid address
-        assertParseFailure(parser, "1" + INVALID_SYMPTOM_DESC, Symptom.MESSAGE_CONSTRAINTS); // invalid symptom
+        assertParseFailure(parser, "1" + INVALID_NAME_DESC, Name.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1" + INVALID_PHONE_DESC, Phone.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1" + INVALID_EMAIL_DESC, Email.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1" + INVALID_ADDRESS_DESC, Address.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1" + INVALID_SYMPTOM_DESC, Symptom.MESSAGE_CONSTRAINTS);
 
-        // invalid phone followed by valid email
         assertParseFailure(parser, "1" + INVALID_PHONE_DESC + EMAIL_DESC_AMY, Phone.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1" + SYMPTOM_DESC_FRIEND + SYMPTOM_DESC_HUSBAND
+                + SYMPTOM_EMPTY, Symptom.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1" + SYMPTOM_DESC_FRIEND + SYMPTOM_EMPTY
+                + SYMPTOM_DESC_HUSBAND, Symptom.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1" + SYMPTOM_EMPTY + SYMPTOM_DESC_FRIEND
+                + SYMPTOM_DESC_HUSBAND, Symptom.MESSAGE_CONSTRAINTS);
 
-        // while parsing {@code PREFIX_SYMPTOM} alone will reset the symptoms of the {@code Person} being edited,
-        // parsing it together with a valid symptom results in error
-        assertParseFailure(parser,
-                "1" + SYMPTOM_DESC_FRIEND + SYMPTOM_DESC_HUSBAND + SYMPTOM_EMPTY, Symptom.MESSAGE_CONSTRAINTS);
-        assertParseFailure(parser,
-                "1" + SYMPTOM_DESC_FRIEND + SYMPTOM_EMPTY + SYMPTOM_DESC_HUSBAND, Symptom.MESSAGE_CONSTRAINTS);
-        assertParseFailure(parser,
-                "1" + SYMPTOM_EMPTY + SYMPTOM_DESC_FRIEND + SYMPTOM_DESC_HUSBAND, Symptom.MESSAGE_CONSTRAINTS);
-
-        // multiple invalid values, but only the first invalid value is captured
-        assertParseFailure(parser,
-                "1" + INVALID_NAME_DESC + INVALID_EMAIL_DESC + VALID_ADDRESS_AMY + VALID_PHONE_AMY,
-                Name.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "1" + INVALID_NAME_DESC + INVALID_EMAIL_DESC
+                + VALID_ADDRESS_AMY + VALID_PHONE_AMY, Name.MESSAGE_CONSTRAINTS);
     }
 
     @Test
@@ -139,32 +120,27 @@ public class UpdateCommandParserTest {
 
     @Test
     public void parse_oneFieldSpecified_success() {
-        // name
         Index targetIndex = INDEX_THIRD_PERSON;
         String userInput = targetIndex.getOneBased() + NAME_DESC_AMY;
         UpdatePersonDescriptor descriptor = new UpdatePersonDescriptorBuilder().withName(VALID_NAME_AMY).build();
         SingleUpdateCommand expectedCommand = new SingleUpdateCommand(targetIndex, descriptor);
         assertParseSuccess(parser, userInput, expectedCommand);
 
-        // phone
         userInput = targetIndex.getOneBased() + PHONE_DESC_AMY;
         descriptor = new UpdatePersonDescriptorBuilder().withPhone(VALID_PHONE_AMY).build();
         expectedCommand = new SingleUpdateCommand(targetIndex, descriptor);
         assertParseSuccess(parser, userInput, expectedCommand);
 
-        // email
         userInput = targetIndex.getOneBased() + EMAIL_DESC_AMY;
         descriptor = new UpdatePersonDescriptorBuilder().withEmail(VALID_EMAIL_AMY).build();
         expectedCommand = new SingleUpdateCommand(targetIndex, descriptor);
         assertParseSuccess(parser, userInput, expectedCommand);
 
-        // address
         userInput = targetIndex.getOneBased() + ADDRESS_DESC_AMY;
         descriptor = new UpdatePersonDescriptorBuilder().withAddress(VALID_ADDRESS_AMY).build();
         expectedCommand = new SingleUpdateCommand(targetIndex, descriptor);
         assertParseSuccess(parser, userInput, expectedCommand);
 
-        // symptoms
         userInput = targetIndex.getOneBased() + SYMPTOM_DESC_FRIEND;
         descriptor = new UpdatePersonDescriptorBuilder().withSymptoms(VALID_SYMPTOM_FRIEND).build();
         expectedCommand = new SingleUpdateCommand(targetIndex, descriptor);
@@ -173,31 +149,23 @@ public class UpdateCommandParserTest {
 
     @Test
     public void parse_multipleRepeatedFields_failure() {
-        // valid followed by invalid
         Index targetIndex = INDEX_FIRST_PERSON;
         String userInput = targetIndex.getOneBased() + INVALID_PHONE_DESC + PHONE_DESC_BOB;
-
         assertParseFailure(parser, userInput, Messages.getErrorMessageForDuplicatePrefixes(PREFIX_PATIENT_PHONE));
 
-        // invalid followed by valid
         userInput = targetIndex.getOneBased() + PHONE_DESC_BOB + INVALID_PHONE_DESC;
-
         assertParseFailure(parser, userInput, Messages.getErrorMessageForDuplicatePrefixes(PREFIX_PATIENT_PHONE));
 
-        // multiple valid fields repeated
         userInput = targetIndex.getOneBased() + PHONE_DESC_AMY + ADDRESS_DESC_AMY + EMAIL_DESC_AMY
                 + SYMPTOM_DESC_FRIEND + PHONE_DESC_AMY + ADDRESS_DESC_AMY + EMAIL_DESC_AMY + SYMPTOM_DESC_FRIEND
                 + PHONE_DESC_BOB + ADDRESS_DESC_BOB + EMAIL_DESC_BOB + SYMPTOM_DESC_HUSBAND;
+        assertParseFailure(parser, userInput, Messages
+                .getErrorMessageForDuplicatePrefixes(PREFIX_PATIENT_PHONE, PREFIX_EMAIL, PREFIX_ADDRESS));
 
-        assertParseFailure(parser, userInput,
-                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_PATIENT_PHONE, PREFIX_EMAIL, PREFIX_ADDRESS));
-
-        // multiple invalid values
         userInput = targetIndex.getOneBased() + INVALID_PHONE_DESC + INVALID_ADDRESS_DESC + INVALID_EMAIL_DESC
                 + INVALID_PHONE_DESC + INVALID_ADDRESS_DESC + INVALID_EMAIL_DESC;
-
-        assertParseFailure(parser, userInput,
-                Messages.getErrorMessageForDuplicatePrefixes(PREFIX_PATIENT_PHONE, PREFIX_EMAIL, PREFIX_ADDRESS));
+        assertParseFailure(parser, userInput, Messages
+                .getErrorMessageForDuplicatePrefixes(PREFIX_PATIENT_PHONE, PREFIX_EMAIL, PREFIX_ADDRESS));
     }
 
     @Test
@@ -214,38 +182,45 @@ public class UpdateCommandParserTest {
     @Test
     public void parse_notesAndAppendNotesSimultaneously_throwsParseException() {
         String expectedMessage = "You cannot overwrite a note (n/) and append to a note (an/) in the same command.";
-
-        // Use an/ and n/ together to trigger the exception
         assertParseFailure(parser, "1 n/Fever an/Take panadol", expectedMessage);
     }
 
     @Test
     public void parse_emptyAppendNotes_throwsParseException() {
         String expectedMessage = "The text to append cannot be empty. If you want to clear the note, use n/ instead.";
-
-        // Provide spaces after an/ to trigger the empty check
         assertParseFailure(parser, "1 an/   ", expectedMessage);
     }
 
     @Test
     public void parse_multipleIndices_returnsMultipleUpdateCommand() {
         List<Index> indices = Arrays.asList(INDEX_FIRST_PERSON, INDEX_SECOND_PERSON);
+        UpdatePersonDescriptor descriptor = new UpdatePersonDescriptorBuilder()
+                .withPhone(VALID_PHONE_AMY).build();
 
-        UpdatePersonDescriptor descriptor = new UpdatePersonDescriptorBuilder().withPhone(VALID_PHONE_AMY).build();
         MultipleUpdateCommand expectedCommand = new MultipleUpdateCommand(indices, descriptor);
 
-        // FIXED: Using "1,2" instead of "1 2" to match the strict comma requirement
-        assertParseSuccess(parser, "1,2 " + PHONE_DESC_AMY, expectedCommand);
+        // Standard strict format, no spaces
+        assertParseSuccess(parser, "1,2" + PHONE_DESC_AMY, expectedCommand);
     }
 
     @Test
     public void parse_multipleIndicesWithSpaces_failure() {
-        // Tries to sneak a space after the comma
-        String userInputWithSpace = "1, 2 " + PHONE_DESC_AMY;
-
-        // Should throw the standard usage message due to the space rejection block
         String expectedMessage = String.format(MESSAGE_INVALID_COMMAND_FORMAT, SingleUpdateCommand.MESSAGE_USAGE);
 
-        assertParseFailure(parser, userInputWithSpace, expectedMessage);
+        // Ensures spaces in the comma-separated indices are rejected immediately
+        assertParseFailure(parser, "1, 2" + PHONE_DESC_AMY, expectedMessage);
+        assertParseFailure(parser, "1 ,2" + PHONE_DESC_AMY, expectedMessage);
+    }
+
+    @Test
+    public void parse_appendNotePresent_success() {
+        Index targetIndex = INDEX_FIRST_PERSON;
+        String userInput = targetIndex.getOneBased() + " an/Append this";
+        UpdatePersonDescriptor descriptor = new UpdatePersonDescriptorBuilder()
+                .withNotesToAppend("Append this").build();
+
+        SingleUpdateCommand expectedCommand = new SingleUpdateCommand(targetIndex, descriptor);
+
+        assertParseSuccess(parser, userInput, expectedCommand);
     }
 }

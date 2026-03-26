@@ -44,8 +44,7 @@ public class ParserUtil {
     }
 
     /**
-     * Parses a string of space-separated indices into a List of Index objects.
-     * Leading and trailing whitespaces will be trimmed.
+     * Parses a string of comma-separated indices into a List of Index objects.
      *
      * @throws ParseException if the given string is empty or contains invalid indices.
      */
@@ -55,10 +54,14 @@ public class ParserUtil {
             throw new ParseException("Please provide at least one index.");
         }
 
-        String[] splitIndices = trimmedIndices.split("\\s+");
+        // Split strictly by comma
+        String[] splitIndices = trimmedIndices.split(",");
         List<Index> indices = new ArrayList<>();
 
         for (String indexString : splitIndices) {
+            if (indexString.isEmpty()) {
+                throw new ParseException(MESSAGE_INVALID_INDEX);
+            }
             indices.add(parseIndex(indexString));
         }
         return indices;

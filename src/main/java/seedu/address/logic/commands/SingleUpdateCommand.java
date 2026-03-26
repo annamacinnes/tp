@@ -1,8 +1,18 @@
 package seedu.address.logic.commands;
 
 import static java.util.Objects.requireNonNull;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_APPEND_NOTES;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_DOCTOR;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_IC;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_NEXT_OF_KIN;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_NEXT_OF_KIN_PHONE;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTES;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_PATIENT_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PATIENT_PHONE;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_SYMPTOM;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_URGENCY;
 import static seedu.address.model.Model.PREDICATE_SHOW_ALL_PERSONS;
 
 import java.util.Collections;
@@ -38,12 +48,22 @@ public class SingleUpdateCommand extends Command {
 
     public static final String COMMAND_WORD = "update";
 
-    public static final String MESSAGE_USAGE = "The index field cannot be empty.\n"
-            + "Usage:\n"
-            + "        Single update: " + COMMAND_WORD + " INDEX [PREFIX/VALUE]...\n"
-            + "        Multiple update: " + COMMAND_WORD
-            + " INDEX1,INDEX2,INDEX3... [PREFIX/VALUE]...\n" // Removed brackets and spaces here
-            + "Example: " + COMMAND_WORD + " 1,2 " // Perfect comma-separated example
+    public static final String MESSAGE_USAGE = COMMAND_WORD + ": Updates the details of the person identified "
+            + "by the index number used in the displayed person list. "
+            + "Existing values will be overwritten by the input values.\n"
+            + "Parameters: INDEX (must be a positive integer) "
+            + "[" + PREFIX_PATIENT_NAME + "NAME] "
+            + "[" + PREFIX_PATIENT_PHONE + "PHONE] "
+            + "[" + PREFIX_EMAIL + "EMAIL] "
+            + "[" + PREFIX_ADDRESS + "ADDRESS] "
+            + "[" + PREFIX_IC + "IC] "
+            + "[" + PREFIX_URGENCY + "LEVEL] "
+            + "[" + PREFIX_NEXT_OF_KIN + "NEXT-OF-KIN] "
+            + "[" + PREFIX_NEXT_OF_KIN_PHONE + "N-O-K PHONE] "
+            + "[" + PREFIX_DOCTOR + "]"
+            + "[" + PREFIX_SYMPTOM + "SYMPTOM]"
+            + "[" + PREFIX_NOTES + "NOTES] [" + PREFIX_APPEND_NOTES + "APPEND_NOTES]...\n"
+            + "Example: " + COMMAND_WORD + " 1 "
             + PREFIX_PATIENT_PHONE + "91234567 "
             + PREFIX_EMAIL + "johndoe@example.com";
 
@@ -53,6 +73,9 @@ public class SingleUpdateCommand extends Command {
 
     private final Index index;
     private final UpdatePersonDescriptor updatePersonDescriptor;
+    private Person originalPerson;
+    private Person updatedPersonForUndo;
+    private boolean wasExecuted = false;
 
     /**
      * @param index of the person in the filtered person list to edit
@@ -67,6 +90,11 @@ public class SingleUpdateCommand extends Command {
     }
 
     @Override
+    public boolean isUndoable() {
+        return true;
+    }
+
+    @Override
     public CommandResult execute(Model model) throws CommandException {
         requireNonNull(model);
         List<Person> lastShownList = model.getFilteredPersonList();
@@ -76,7 +104,9 @@ public class SingleUpdateCommand extends Command {
         }
 
         Person personToUpdate = lastShownList.get(index.getZeroBased());
+        originalPerson = personToUpdate;
         Person updatedPerson = createUpdatedPerson(personToUpdate, updatePersonDescriptor);
+        updatedPersonForUndo = updatedPerson;
 
         if (!personToUpdate.isSamePerson(updatedPerson) && model.hasPerson(updatedPerson)) {
             throw new CommandException(MESSAGE_DUPLICATE_PERSON);
@@ -84,13 +114,22 @@ public class SingleUpdateCommand extends Command {
 
         model.setPerson(personToUpdate, updatedPerson);
         model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
+        wasExecuted = true;
         return new CommandResult(String.format(MESSAGE_UPDATE_PERSON_SUCCESS, Messages.format(updatedPerson)));
+    }
+
+    @Override
+    public void undo(Model model) throws CommandException {
+        requireNonNull(model);
+        if (wasExecuted && updatedPersonForUndo != null && originalPerson != null) {
+            model.setPerson(updatedPersonForUndo, originalPerson);
+            model.updateFilteredPersonList(PREDICATE_SHOW_ALL_PERSONS);
+        }
     }
 
     /**
      * Creates and returns a {@code Person} with the details of {@code personToEdit}
      * edited with {@code editPersonDescriptor}.
-     * * NEW: Added "throws CommandException" to signature so we can safely block notes that get too long.
      */
     public static Person createUpdatedPerson(Person personToUpdate, UpdatePersonDescriptor updatePersonDescriptor)
             throws CommandException {
@@ -109,42 +148,25 @@ public class SingleUpdateCommand extends Command {
         DoctorName updatedDoctorName = updatePersonDescriptor.getDoctorName().orElse(personToUpdate.getDoctorName());
         NextOfKin updatedNextOfKin = updatePersonDescriptor.getNextOfKin().orElse(personToUpdate.getNextOfKin());
 
-        // NEW: BUG-PROOF APPEND LOGIC
+        // NEW: Abstracted Append Logic
         Notes updatedNotes = personToUpdate.getNotes();
 
         if (updatePersonDescriptor.getNotes().isPresent()) {
             updatedNotes = updatePersonDescriptor.getNotes().get();
         } else if (updatePersonDescriptor.getNotesToAppend().isPresent()) {
-            String existingNotesText = personToUpdate.getNotes().toString();
-            String textToAppend = updatePersonDescriptor.getNotesToAppend().get();
-
-            String combinedText;
-            if (existingNotesText == null || existingNotesText.trim().isEmpty() || existingNotesText.equals("-")) {
-                combinedText = textToAppend;
-            } else {
-                combinedText = existingNotesText + "\n" + textToAppend;
-            }
-
-            // Re-run the validation on the combined string
-            if (!Notes.isValidNotes(combinedText)) {
+            try {
+                // The combination logic is now entirely handled by the Notes class
+                updatedNotes = updatedNotes.append(updatePersonDescriptor.getNotesToAppend().get());
+            } catch (IllegalArgumentException e) {
+                // Catches the error if the appended notes exceed character limits
                 throw new CommandException("Appending this text exceeds the note character constraints. "
                         + Notes.MESSAGE_CONSTRAINTS);
             }
-
-            updatedNotes = new Notes(combinedText);
         }
 
-        return new Person(updatedName,
-                updatedPhone,
-                updatedEmail,
-                updatedAddress,
-                updatedSymptoms,
-                updatedIc,
-                updatedUrgencyLevel,
-                updatedNextOfKinPhone,
-                updatedDoctorName,
-                updatedNextOfKin,
-                updatedNotes);
+        return new Person(updatedName, updatedPhone, updatedEmail, updatedAddress, updatedSymptoms,
+                updatedIc, updatedUrgencyLevel, updatedNextOfKinPhone, updatedDoctorName,
+                updatedNextOfKin, updatedNotes);
     }
 
     @Override
@@ -153,7 +175,6 @@ public class SingleUpdateCommand extends Command {
             return true;
         }
 
-        // instanceof handles nulls
         if (!(other instanceof SingleUpdateCommand otherUpdateCommand)) {
             return false;
         }
@@ -186,7 +207,7 @@ public class SingleUpdateCommand extends Command {
         private DoctorName doctorName;
         private NextOfKin nextOfKin;
         private Notes notes;
-        private String notesToAppend; // NEW FIELD
+        private Notes notesToAppend; // CHANGED to Notes
 
         public UpdatePersonDescriptor() {}
 
@@ -206,14 +227,10 @@ public class SingleUpdateCommand extends Command {
             setDoctorName(toCopy.doctorName);
             setNextOfKin(toCopy.nextOfKin);
             setNotes(toCopy.notes);
-            setNotesToAppend(toCopy.notesToAppend); // NEW
+            setNotesToAppend(toCopy.notesToAppend); // Updated
         }
 
-        /**
-         * Returns true if at least one field is edited.
-         */
         public boolean isAnyFieldEdited() {
-            // NEW: Added notesToAppend to CollectionUtil check
             return CollectionUtil.isAnyNonNull(name, phone, email, address,
                     symptoms, urgencyLevel, ic, nextOfKinPhone, doctorName, nextOfKin, notes, notesToAppend);
         }
@@ -282,28 +299,19 @@ public class SingleUpdateCommand extends Command {
             return Optional.ofNullable(notes);
         }
 
-        // NEW: Getter and Setter for notesToAppend
-        public void setNotesToAppend(String notesToAppend) {
+        // UPDATED: Now accepts and returns Notes
+        public void setNotesToAppend(Notes notesToAppend) {
             this.notesToAppend = notesToAppend;
         }
 
-        public Optional<String> getNotesToAppend() {
+        public Optional<Notes> getNotesToAppend() {
             return Optional.ofNullable(notesToAppend);
         }
 
-        /**
-         * Sets {@code symptoms} to this object's {@code symptoms}.
-         * A defensive copy of {@code symptoms} is used internally.
-         */
         public void setSymptoms(Set<Symptom> symptoms) {
             this.symptoms = (symptoms != null) ? new HashSet<>(symptoms) : null;
         }
 
-        /**
-         * Returns an unmodifiable symptom set, which throws {@code UnsupportedOperationException}
-         * if modification is attempted.
-         * Returns {@code Optional#empty()} if {@code symptoms} is null.
-         */
         public Optional<Set<Symptom>> getSymptoms() {
             return (symptoms != null) ? Optional.of(Collections.unmodifiableSet(symptoms)) : Optional.empty();
         }
@@ -330,7 +338,6 @@ public class SingleUpdateCommand extends Command {
                 return true;
             }
 
-            // instanceof handles nulls
             if (!(other instanceof UpdatePersonDescriptor otherUpdatePersonDescriptor)) {
                 return false;
             }
@@ -346,7 +353,7 @@ public class SingleUpdateCommand extends Command {
                     && Objects.equals(doctorName, otherUpdatePersonDescriptor.doctorName)
                     && Objects.equals(nextOfKin, otherUpdatePersonDescriptor.nextOfKin)
                     && Objects.equals(notes, otherUpdatePersonDescriptor.notes)
-                    && Objects.equals(notesToAppend, otherUpdatePersonDescriptor.notesToAppend); // NEW
+                    && Objects.equals(notesToAppend, otherUpdatePersonDescriptor.notesToAppend);
         }
 
         @Override
@@ -363,7 +370,7 @@ public class SingleUpdateCommand extends Command {
                     .add("doctorName", doctorName)
                     .add("nextOfKin", nextOfKin)
                     .add("notes", notes)
-                    .add("notesToAppend", notesToAppend) // NEW
+                    .add("notesToAppend", notesToAppend)
                     .toString();
         }
     }

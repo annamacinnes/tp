@@ -10,6 +10,7 @@ import java.util.Set;
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
+import seedu.address.logic.parser.Prefix;
 import seedu.address.model.Model;
 import seedu.address.model.person.Person;
 
@@ -24,9 +25,27 @@ public class MultipleDeleteCommand extends DeleteCommand {
             + "Example: " + COMMAND_WORD + " 1,2,4";
 
     private final Index[] targetIndices;
+    private Person[] deletedPersons;
+    private boolean wasExecuted = false;
 
     public MultipleDeleteCommand(Index... targetIndices) {
+        this(targetIndices, Set.of());
+    }
+
+    /**
+     * Creates a MultipleDeleteCommand to delete the specified people.
+     *
+     * @param targetIndices The indices of the people to delete.
+     * @param prefixes The prefixes indicating which fields to delete (if any).
+     */
+    public MultipleDeleteCommand(Index[] targetIndices, Set<Prefix> prefixes) {
+        super(prefixes);
         this.targetIndices = targetIndices;
+    }
+
+    @Override
+    public boolean isUndoable() {
+        return true;
     }
 
     @Override
@@ -40,24 +59,38 @@ public class MultipleDeleteCommand extends DeleteCommand {
 
         verifyNoDuplicateIndices();
 
-        Person[] personsToDelete = new Person[targetIndices.length];
-        for (int i = 0; i < targetIndices.length; i++) {
-            Index targetIndex = targetIndices[i];
-            if (targetIndex.getZeroBased() >= lastShownList.size()) {
-                Index lastIndex = Index.fromOneBased(model.getFilteredPersonList().size());
-                throw new CommandException(Messages.getErrorMessageForInvalidIndices(lastIndex));
-            }
+        Person[] personsToDelete = getPersonsToDelete(model, lastShownList);
+        StringBuilder deletedPersonsString = new StringBuilder();
 
-            Person personToDelete = lastShownList.get(targetIndex.getZeroBased());
-            personsToDelete[i] = personToDelete;
+        if (!getPrefixes().isEmpty()) {
+            Person[] updatedPersons = getUpdatedPersons(personsToDelete);
+            for (int i = 0; i < personsToDelete.length; i++) {
+                Person person = personsToDelete[i];
+                Person updatedPerson = updatedPersons[i];
+                model.setPerson(person, updatedPerson);
+                deletedPersonsString.append("\n" + Messages.format(updatedPerson));
+            }
+            return new CommandResult(String.format(MESSAGE_DELETE_FIELD_SUCCESS, deletedPersonsString));
         }
 
-        StringBuilder deletedPersonsString = new StringBuilder();
+        deletedPersons = personsToDelete;
+
         for (Person person : personsToDelete) {
             model.deletePerson(person);
             deletedPersonsString.append("\n" + Messages.format(person));
         }
+        wasExecuted = true;
         return new CommandResult(String.format(MESSAGE_DELETE_PERSON_SUCCESS, deletedPersonsString));
+    }
+
+    @Override
+    public void undo(Model model) throws CommandException {
+        requireNonNull(model);
+        if (wasExecuted && deletedPersons != null) {
+            for (Person person : deletedPersons) {
+                model.addPerson(person);
+            }
+        }
     }
 
     private void verifyNoDuplicateIndices() throws CommandException {
@@ -72,6 +105,21 @@ public class MultipleDeleteCommand extends DeleteCommand {
         if (!duplicateIndices.isEmpty()) {
             throw new CommandException(getErrorMessageForDuplicateIndices(duplicateIndices));
         }
+    }
+
+    private Person[] getPersonsToDelete(Model model, List<Person> lastShownList) throws CommandException {
+        Person[] personsToDelete = new Person[targetIndices.length];
+        for (int i = 0; i < targetIndices.length; i++) {
+            Index targetIndex = targetIndices[i];
+            if (targetIndex.getZeroBased() >= lastShownList.size()) {
+                Index lastIndex = Index.fromOneBased(model.getFilteredPersonList().size());
+                throw new CommandException(Messages.getErrorMessageForInvalidIndices(lastIndex));
+            }
+
+            Person personToDelete = lastShownList.get(targetIndex.getZeroBased());
+            personsToDelete[i] = personToDelete;
+        }
+        return personsToDelete;
     }
 
     @Override

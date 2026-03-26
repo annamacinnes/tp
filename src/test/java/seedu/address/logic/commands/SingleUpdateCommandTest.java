@@ -1,8 +1,7 @@
 package seedu.address.logic.commands;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static seedu.address.logic.commands.CommandTestUtil.DESC_AMY;
 import static seedu.address.logic.commands.CommandTestUtil.DESC_BOB;
@@ -21,11 +20,11 @@ import org.junit.jupiter.api.Test;
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
 import seedu.address.logic.commands.SingleUpdateCommand.UpdatePersonDescriptor;
-import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
 import seedu.address.model.UserPrefs;
+import seedu.address.model.person.Notes;
 import seedu.address.model.person.Person;
 import seedu.address.testutil.PersonBuilder;
 import seedu.address.testutil.UpdatePersonDescriptorBuilder;
@@ -135,15 +134,11 @@ public class SingleUpdateCommandTest {
         assertCommandFailure(updateCommand, model, Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
     }
 
-    /**
-     * Edit filtered list where index is larger than size of filtered list,
-     * but smaller than size of address book
-     */
     @Test
     public void execute_invalidPersonIndexFilteredList_failure() {
         showPersonAtIndex(model, INDEX_FIRST_PERSON);
         Index outOfBoundIndex = INDEX_SECOND_PERSON;
-        // ensures that outOfBoundIndex is still in bounds of address book list
+
         assertTrue(outOfBoundIndex.getZeroBased() < model.getAddressBook().getPersonList().size());
 
         SingleUpdateCommand updateCommand = new SingleUpdateCommand(outOfBoundIndex,
@@ -153,39 +148,44 @@ public class SingleUpdateCommandTest {
     }
 
     @Test
-    public void createUpdatedPerson_appendNoteToEmptyExistingNote_success() throws Exception {
-        Person originalPerson = new PersonBuilder().withNotes("-").build();
+    public void execute_appendNoteWithTimestamp_success() {
+        Person personToUpdate = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
+
+        String textToAppend = "Patient is recovering well.";
         UpdatePersonDescriptor descriptor = new UpdatePersonDescriptor();
-        descriptor.setNotesToAppend("New appended text");
+        descriptor.setNotesToAppend(new Notes(textToAppend));
 
-        Person updatedPerson = SingleUpdateCommand.createUpdatedPerson(originalPerson, descriptor);
+        SingleUpdateCommand updateCommand = new SingleUpdateCommand(INDEX_FIRST_PERSON, descriptor);
 
-        assertEquals("New appended text", updatedPerson.getNotes().toString());
+        // Generate the expected timestamp format
+        String timestamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM HH:mm"));
+        String formattedAppend = "[" + timestamp + "] " + textToAppend;
+
+        String existingNotes = personToUpdate.getNotes().toString();
+        String expectedNoteText = existingNotes.isEmpty() ? formattedAppend : existingNotes + "\n" + formattedAppend;
+
+        Person editedPerson = new PersonBuilder(personToUpdate)
+                .withNotes(expectedNoteText).build();
+        String expectedMessage = String.format(SingleUpdateCommand
+                .MESSAGE_UPDATE_PERSON_SUCCESS, Messages.format(editedPerson));
+
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setPerson(personToUpdate, editedPerson);
+
+        assertCommandSuccess(updateCommand, model, expectedMessage, expectedModel);
     }
 
     @Test
-    public void createUpdatedPerson_appendNoteToExistingNote_success() throws Exception {
-        Person originalPerson = new PersonBuilder().withNotes("First line.").build();
+    public void execute_appendNonEmptyNote_success() throws Exception {
         UpdatePersonDescriptor descriptor = new UpdatePersonDescriptor();
-        descriptor.setNotesToAppend("Second line.");
+        descriptor.setNotesToAppend(new Notes("Patient is recovering well."));
 
-        Person updatedPerson = SingleUpdateCommand.createUpdatedPerson(originalPerson, descriptor);
+        SingleUpdateCommand updateCommand = new SingleUpdateCommand(INDEX_FIRST_PERSON, descriptor);
+        updateCommand.execute(model);
 
-        assertEquals("First line.\nSecond line.", updatedPerson.getNotes().toString());
-    }
-
-    @Test
-    public void createUpdatedPerson_appendNoteExceedsConstraints_throwsCommandException() {
-        Person originalPerson = new PersonBuilder().withNotes("Normal note.").build();
-        UpdatePersonDescriptor descriptor = new UpdatePersonDescriptor();
-
-        // Generates a massive string to force isValidNotes() to return false.
-        String invalidAppendedText = " ".repeat(10000);
-        descriptor.setNotesToAppend(invalidAppendedText);
-
-        assertThrows(CommandException.class, () ->
-                SingleUpdateCommand.createUpdatedPerson(originalPerson, descriptor)
-        );
+        String updatedNote = model.getFilteredPersonList().get(0).getNotes().toString();
+        assertTrue(updatedNote.contains("Patient is recovering well."));
     }
 
     @Test
@@ -195,22 +195,22 @@ public class SingleUpdateCommandTest {
         // same values -> returns true
         UpdatePersonDescriptor copyDescriptor = new UpdatePersonDescriptor(DESC_AMY);
         SingleUpdateCommand commandWithSameValues = new SingleUpdateCommand(INDEX_FIRST_PERSON, copyDescriptor);
-        assertTrue(standardCommand.equals(commandWithSameValues));
+        assertEquals(standardCommand, commandWithSameValues);
 
         // same object -> returns true
-        assertTrue(standardCommand.equals(standardCommand));
+        assertEquals(standardCommand, standardCommand);
 
         // null -> returns false
-        assertFalse(standardCommand.equals(null));
+        assertNotEquals(null, standardCommand);
 
         // different types -> returns false
-        assertFalse(standardCommand.equals(new ClearCommand()));
+        assertNotEquals(standardCommand, new ClearCommand());
 
         // different index -> returns false
-        assertFalse(standardCommand.equals(new SingleUpdateCommand(INDEX_SECOND_PERSON, DESC_AMY)));
+        assertNotEquals(standardCommand, new SingleUpdateCommand(INDEX_SECOND_PERSON, DESC_AMY));
 
         // different descriptor -> returns false
-        assertFalse(standardCommand.equals(new SingleUpdateCommand(INDEX_FIRST_PERSON, DESC_BOB)));
+        assertNotEquals(standardCommand, new SingleUpdateCommand(INDEX_FIRST_PERSON, DESC_BOB));
     }
 
     @Test
@@ -219,10 +219,8 @@ public class SingleUpdateCommandTest {
         UpdatePersonDescriptor updatePersonDescriptor = new UpdatePersonDescriptor();
         SingleUpdateCommand updateCommand = new SingleUpdateCommand(index, updatePersonDescriptor);
 
-        // CHANGED: "updatePersonDescriptor=" to "editPersonDescriptor=" to match the actual class output
         String expected = SingleUpdateCommand.class.getCanonicalName() + "{index=" + index + ", editPersonDescriptor="
                 + updatePersonDescriptor + "}";
         assertEquals(expected, updateCommand.toString());
     }
-
 }
