@@ -2,6 +2,8 @@ package seedu.address.model.person;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import static java.util.Objects.requireNonNull;
+import static seedu.address.commons.util.AppUtil.checkArgument;
 
 /**
  * Represents the notes field for a patient.
@@ -21,15 +23,9 @@ public class Notes {
      * @throws IllegalArgumentException if the notes exceed the maximum length
      */
     public Notes(String notes) {
-        if (notes == null) {
-            this.value = ""; // optional field
-        } else {
-            String trimmedNotes = notes.trim();
-            if (!isValidNotes(trimmedNotes)) {
-                throw new IllegalArgumentException(MESSAGE_CONSTRAINTS);
-            }
-            this.value = trimmedNotes;
-        }
+        requireNonNull(notes);
+        checkArgument(isValidNotes(notes), MESSAGE_CONSTRAINTS);
+        this.value = notes;
     }
 
     /**
@@ -69,6 +65,24 @@ public class Notes {
 
     public String getValue() {
         return value;
+    }
+
+    /**
+     * Appends the given Notes to this current Notes.
+     * Returns a new Notes object containing the combined text.
+     */
+    public Notes append(Notes additionalNotes) {
+        if (additionalNotes.value.trim().isEmpty()) {
+            return this;
+        }
+
+        String existingText = this.value;
+
+        if (existingText.trim().isEmpty()) {
+            return additionalNotes;
+        }
+
+        return new Notes(existingText + "\n" + additionalNotes.value);
     }
 
     @Override

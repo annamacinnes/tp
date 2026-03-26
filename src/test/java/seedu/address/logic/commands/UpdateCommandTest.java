@@ -194,25 +194,26 @@ public class UpdateCommandTest {
 
     @Test
     public void execute_appendNoteExceedsLimit_throwsCommandException() {
-        // 1. Existing note is 400 chars (Valid)
-        String existingText = "a".repeat(400);
-        // 2. Text to append is 150 chars (Valid individually)
-        String textToAppend = "b".repeat(150);
+        // 1. Set up two valid strings that, when combined, exceed your character limit (assuming a 500 char limit)
+        String existingText = "a".repeat(250);
+        String textToAppend = "b".repeat(251); // Combined length: 501
 
+        // 2. Give the target patient the initial 250-character note
         Person firstPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
         Person personWithExistingNotes = new PersonBuilder(firstPerson).withNotes(existingText).build();
         model.setPerson(firstPerson, personWithExistingNotes);
 
+        // 3. Set up the descriptor to append the 251-character note
+        // This no longer crashes the test setup because 251 is a valid length on its own!
         UpdatePersonDescriptor descriptor = new UpdatePersonDescriptor();
-        // This line will now pass because 150 < 500
         descriptor.setNotesToAppend(new Notes(textToAppend));
 
         UpdateCommand updateCommand = new UpdateCommand(INDEX_FIRST_PERSON, descriptor);
 
+        // 4. Verify that the execution properly catches the overflow and throws the CommandException
         String expectedMessage = "Appending this text exceeds the note character constraints. "
                 + Notes.MESSAGE_CONSTRAINTS;
 
-        // This will now correctly catch the CommandException thrown during .execute()
         assertCommandFailure(updateCommand, model, expectedMessage);
     }
 
@@ -241,27 +242,46 @@ public class UpdateCommandTest {
     }
 
     @Test
-    public void execute_appendNoteToNoteWithDash_success() {
+    public void execute_appendNoteWithTimestamp_success() {
+        // Test 1: Your PR 99 test for appending with timestamps (Dash logic removed!)
         Person personToUpdate = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
-        Person personWithDash = new PersonBuilder(personToUpdate).withNotes("-").build();
-        model.setPerson(personToUpdate, personWithDash);
-
-        String textToAppend = "Actual Note Content";
-        UpdatePersonDescriptor descriptor = new UpdatePersonDescriptorBuilder()
-                .withNotesToAppend(textToAppend).build();
+        
+        String textToAppend = "Patient is recovering well.";
+        UpdatePersonDescriptor descriptor = new UpdatePersonDescriptor();
+        descriptor.setNotesToAppend(new Notes(textToAppend)); 
+        
         UpdateCommand updateCommand = new UpdateCommand(INDEX_FIRST_PERSON, descriptor);
 
-        // FIX: Generate the matching timestamp
+        // Generate the expected timestamp format
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd MMM HH:mm"));
-        String expectedNote = "[" + timestamp + "] " + textToAppend;
+        String formattedAppend = "[" + timestamp + "] " + textToAppend;
+        
+        // Combine with existing notes (handling empty string naturally)
+        String existingNotes = personToUpdate.getNotes().toString();
+        String expectedNoteText = existingNotes.isEmpty() ? formattedAppend : existingNotes + "\n" + formattedAppend;
 
-        Person editedPerson = new PersonBuilder(personWithDash).withNotes(expectedNote).build();
-        String expectedMessage = String.format(UpdateCommand.MESSAGE_UPDATE_PERSON_SUCCESS,
-                Messages.format(editedPerson));
+        Person editedPerson = new PersonBuilder(personToUpdate).withNotes(expectedNoteText).build();
+        String expectedMessage = String.format(UpdateCommand.MESSAGE_UPDATE_PERSON_SUCCESS, Messages.format(editedPerson));
+        
         Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
-        expectedModel.setPerson(personWithDash, editedPerson);
+        expectedModel.setPerson(personToUpdate, editedPerson);
 
         assertCommandSuccess(updateCommand, model, expectedMessage, expectedModel);
+    }
+
+    @Test
+    public void execute_appendNonEmptyNote_success() throws Exception {
+        // Test 2: The coverage booster test from PR 98 (Master branch)
+        Person personToUpdate = model.getFilteredPersonList().get(0);
+
+        UpdatePersonDescriptor descriptor = new UpdatePersonDescriptor();
+        descriptor.setNotesToAppend(new Notes("Patient is recovering well."));
+
+        UpdateCommand updateCommand = new UpdateCommand(INDEX_FIRST_PERSON, descriptor);
+        updateCommand.execute(model);
+
+        String updatedNote = model.getFilteredPersonList().get(0).getNotes().toString();
+        assertTrue(updatedNote.contains("Patient is recovering well."));
     }
 
     @Test

@@ -23,6 +23,7 @@ import static seedu.address.logic.commands.CommandTestUtil.VALID_PHONE_BOB;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_SYMPTOM_FRIEND;
 import static seedu.address.logic.commands.CommandTestUtil.VALID_SYMPTOM_HUSBAND;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_ADDRESS;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_APPEND_NOTES;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PATIENT_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_SYMPTOM;
@@ -41,6 +42,7 @@ import seedu.address.logic.commands.UpdateCommand.UpdatePersonDescriptor;
 import seedu.address.model.person.Address;
 import seedu.address.model.person.Email;
 import seedu.address.model.person.Name;
+import seedu.address.model.person.Notes;
 import seedu.address.model.person.Phone;
 import seedu.address.model.symptom.Symptom;
 import seedu.address.testutil.UpdatePersonDescriptorBuilder;
@@ -218,10 +220,16 @@ public class UpdateCommandParserTest {
     }
 
     @Test
-    public void parse_emptyAppendNote_throwsParseException() {
-        // Covers red line 126: Testing the .trim().isEmpty() guard
-        assertParseFailure(parser, "1 an/  ",
-                "The text to append cannot be empty. If you want to clear the note, use n/ instead.");
+    public void parse_emptyAppendNote_success() {
+        Index targetIndex = INDEX_FIRST_PERSON;
+        String userInput = targetIndex.getOneBased() + " " + PREFIX_APPEND_NOTES + " ";
+
+        // Now it should expect it to successfully parse into an empty Notes object
+        UpdatePersonDescriptor descriptor = new UpdatePersonDescriptor();
+        descriptor.setNotesToAppend(new Notes(""));
+        UpdateCommand expectedCommand = new UpdateCommand(targetIndex, descriptor);
+
+        assertParseSuccess(parser, userInput, expectedCommand);
     }
 
     @Test

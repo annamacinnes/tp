@@ -128,15 +128,17 @@ public class UpdateCommand extends Command {
         DoctorName updatedDoctorName = updatePersonDescriptor.getDoctorName().orElse(personToUpdate.getDoctorName());
         NextOfKin updatedNextOfKin = updatePersonDescriptor.getNextOfKin().orElse(personToUpdate.getNextOfKin());
 
+        // NEW: Abstracted Append Logic
         Notes updatedNotes = personToUpdate.getNotes();
 
         if (updatePersonDescriptor.getNotes().isPresent()) {
             updatedNotes = updatePersonDescriptor.getNotes().get();
         } else if (updatePersonDescriptor.getNotesToAppend().isPresent()) {
             try {
-                updatedNotes = personToUpdate.getNotes().append(updatePersonDescriptor.getNotesToAppend().get());
+                // The combination logic is now entirely handled by the Notes class
+                updatedNotes = updatedNotes.append(updatePersonDescriptor.getNotesToAppend().get());
             } catch (IllegalArgumentException e) {
-                // Catches the error if the combined note exceeds character constraints
+                // Catches the error if the appended notes exceed character limits
                 throw new CommandException("Appending this text exceeds the note character constraints. "
                         + Notes.MESSAGE_CONSTRAINTS);
             }
@@ -205,7 +207,7 @@ public class UpdateCommand extends Command {
             setDoctorName(toCopy.doctorName);
             setNextOfKin(toCopy.nextOfKin);
             setNotes(toCopy.notes);
-            setNotesToAppend(toCopy.notesToAppend);
+            setNotesToAppend(toCopy.notesToAppend); // Updated
         }
 
         public boolean isAnyFieldEdited() {
@@ -277,12 +279,11 @@ public class UpdateCommand extends Command {
             return Optional.ofNullable(notes);
         }
 
-        // CHANGED to Notes
+        // UPDATED: Now accepts and returns Notes
         public void setNotesToAppend(Notes notesToAppend) {
             this.notesToAppend = notesToAppend;
         }
 
-        // CHANGED to Notes
         public Optional<Notes> getNotesToAppend() {
             return Optional.ofNullable(notesToAppend);
         }

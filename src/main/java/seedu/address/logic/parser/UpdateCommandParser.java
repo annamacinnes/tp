@@ -120,13 +120,12 @@ public class UpdateCommandParser implements Parser<UpdateCommand> {
             updatePersonDescriptor.setNotes(ParserUtil.parseNotes(argMultimap.getValue(PREFIX_NOTES).get()));
         }
 
+
         // NEW: Handle Append Note & block empty strings
         if (argMultimap.getValue(PREFIX_APPEND_NOTES).isPresent()) {
             String notesToAppend = argMultimap.getValue(PREFIX_APPEND_NOTES).get().trim();
-            if (notesToAppend.isEmpty()) {
-                throw new ParseException("The text to append cannot be empty. "
-                        + "If you want to clear the note, use n/ instead.");
-            }
+
+
             updatePersonDescriptor.setNotesToAppend(ParserUtil.parseNotes(notesToAppend));
         }
 
