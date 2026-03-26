@@ -110,7 +110,6 @@ public class UpdateCommand extends Command {
     /**
      * Creates and returns a {@code Person} with the details of {@code personToEdit}
      * edited with {@code editPersonDescriptor}.
-     * * NEW: Added "throws CommandException" to signature so we can safely block notes that get too long.
      */
     private static Person createUpdatedPerson(Person personToUpdate, UpdatePersonDescriptor updatePersonDescriptor)
             throws CommandException {
@@ -129,29 +128,20 @@ public class UpdateCommand extends Command {
         DoctorName updatedDoctorName = updatePersonDescriptor.getDoctorName().orElse(personToUpdate.getDoctorName());
         NextOfKin updatedNextOfKin = updatePersonDescriptor.getNextOfKin().orElse(personToUpdate.getNextOfKin());
 
-        // NEW: BUG-PROOF APPEND LOGIC
+        // NEW: Abstracted Append Logic
         Notes updatedNotes = personToUpdate.getNotes();
 
         if (updatePersonDescriptor.getNotes().isPresent()) {
             updatedNotes = updatePersonDescriptor.getNotes().get();
         } else if (updatePersonDescriptor.getNotesToAppend().isPresent()) {
-            String existingNotesText = personToUpdate.getNotes().toString();
-            String textToAppend = updatePersonDescriptor.getNotesToAppend().get();
-
-            String combinedText;
-            if (existingNotesText == null || existingNotesText.trim().isEmpty() || existingNotesText.equals("-")) {
-                combinedText = textToAppend;
-            } else {
-                combinedText = existingNotesText + "\n" + textToAppend;
-            }
-
-            // Re-run the validation on the combined string
-            if (!Notes.isValidNotes(combinedText)) {
+            try {
+                // The combination logic is now entirely handled by the Notes class
+                updatedNotes = updatedNotes.append(updatePersonDescriptor.getNotesToAppend().get());
+            } catch (IllegalArgumentException e) {
+                // Catches the error if the appended notes exceed character limits
                 throw new CommandException("Appending this text exceeds the note character constraints. "
                         + Notes.MESSAGE_CONSTRAINTS);
             }
-
-            updatedNotes = new Notes(combinedText);
         }
 
         return new Person(updatedName,
@@ -173,7 +163,6 @@ public class UpdateCommand extends Command {
             return true;
         }
 
-        // instanceof handles nulls
         if (!(other instanceof UpdateCommand otherUpdateCommand)) {
             return false;
         }
@@ -206,7 +195,7 @@ public class UpdateCommand extends Command {
         private DoctorName doctorName;
         private NextOfKin nextOfKin;
         private Notes notes;
-        private String notesToAppend; // NEW FIELD
+        private Notes notesToAppend; // CHANGED to Notes
 
         public UpdatePersonDescriptor() {}
 
@@ -226,14 +215,13 @@ public class UpdateCommand extends Command {
             setDoctorName(toCopy.doctorName);
             setNextOfKin(toCopy.nextOfKin);
             setNotes(toCopy.notes);
-            setNotesToAppend(toCopy.notesToAppend); // NEW
+            setNotesToAppend(toCopy.notesToAppend); // Updated
         }
 
         /**
          * Returns true if at least one field is edited.
          */
         public boolean isAnyFieldEdited() {
-            // NEW: Added notesToAppend to CollectionUtil check
             return CollectionUtil.isAnyNonNull(name, phone, email, address,
                     symptoms, urgencyLevel, ic, nextOfKinPhone, doctorName, nextOfKin, notes, notesToAppend);
         }
@@ -302,28 +290,19 @@ public class UpdateCommand extends Command {
             return Optional.ofNullable(notes);
         }
 
-        // NEW: Getter and Setter for notesToAppend
-        public void setNotesToAppend(String notesToAppend) {
+        // UPDATED: Now accepts and returns Notes
+        public void setNotesToAppend(Notes notesToAppend) {
             this.notesToAppend = notesToAppend;
         }
 
-        public Optional<String> getNotesToAppend() {
+        public Optional<Notes> getNotesToAppend() {
             return Optional.ofNullable(notesToAppend);
         }
 
-        /**
-         * Sets {@code symptoms} to this object's {@code symptoms}.
-         * A defensive copy of {@code symptoms} is used internally.
-         */
         public void setSymptoms(Set<Symptom> symptoms) {
             this.symptoms = (symptoms != null) ? new HashSet<>(symptoms) : null;
         }
 
-        /**
-         * Returns an unmodifiable symptom set, which throws {@code UnsupportedOperationException}
-         * if modification is attempted.
-         * Returns {@code Optional#empty()} if {@code symptoms} is null.
-         */
         public Optional<Set<Symptom>> getSymptoms() {
             return (symptoms != null) ? Optional.of(Collections.unmodifiableSet(symptoms)) : Optional.empty();
         }
@@ -350,7 +329,6 @@ public class UpdateCommand extends Command {
                 return true;
             }
 
-            // instanceof handles nulls
             if (!(other instanceof UpdatePersonDescriptor otherUpdatePersonDescriptor)) {
                 return false;
             }
@@ -366,7 +344,7 @@ public class UpdateCommand extends Command {
                     && Objects.equals(doctorName, otherUpdatePersonDescriptor.doctorName)
                     && Objects.equals(nextOfKin, otherUpdatePersonDescriptor.nextOfKin)
                     && Objects.equals(notes, otherUpdatePersonDescriptor.notes)
-                    && Objects.equals(notesToAppend, otherUpdatePersonDescriptor.notesToAppend); // NEW
+                    && Objects.equals(notesToAppend, otherUpdatePersonDescriptor.notesToAppend);
         }
 
         @Override
@@ -383,7 +361,7 @@ public class UpdateCommand extends Command {
                     .add("doctorName", doctorName)
                     .add("nextOfKin", nextOfKin)
                     .add("notes", notes)
-                    .add("notesToAppend", notesToAppend) // NEW
+                    .add("notesToAppend", notesToAppend)
                     .toString();
         }
     }

@@ -76,7 +76,8 @@ public class UpdateCommandParser implements Parser<UpdateCommand> {
 
         // NEW: BUG PREVENTION: Prevent overwrite (n/) and append (an/) at the same time
         if (argMultimap.getValue(PREFIX_NOTES).isPresent() && argMultimap.getValue(PREFIX_APPEND_NOTES).isPresent()) {
-            throw new ParseException("You cannot overwrite a note (n/) and append to a note (an/) in the same command.");
+            throw new ParseException("You cannot overwrite a note (n/) "
+                    + "and append to a note (an/) in the same command.");
         }
 
         UpdatePersonDescriptor updatePersonDescriptor = new UpdatePersonDescriptor();
@@ -119,14 +120,13 @@ public class UpdateCommandParser implements Parser<UpdateCommand> {
             updatePersonDescriptor.setNotes(ParserUtil.parseNotes(argMultimap.getValue(PREFIX_NOTES).get()));
         }
 
+
         // NEW: Handle Append Note & block empty strings
         if (argMultimap.getValue(PREFIX_APPEND_NOTES).isPresent()) {
             String notesToAppend = argMultimap.getValue(PREFIX_APPEND_NOTES).get().trim();
-            if (notesToAppend.isEmpty()) {
-                throw new ParseException("The text to append cannot be empty. "
-                        + "If you want to clear the note, use n/ instead.");
-            }
-            updatePersonDescriptor.setNotesToAppend(notesToAppend);
+
+
+            updatePersonDescriptor.setNotesToAppend(ParserUtil.parseNotes(notesToAppend));
         }
 
         parseSymptomsForEdit(argMultimap.getAllValues(PREFIX_SYMPTOM)).ifPresent(updatePersonDescriptor::setSymptoms);
