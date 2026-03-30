@@ -15,7 +15,8 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_PATIENT_PHONE;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_SYMPTOM;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_URGENCY;
 
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -58,25 +59,25 @@ public class DeleteCommandParser implements Parser<DeleteCommand> {
 
         verifyNoInvalidPrefixes(argMultimap);
 
-        if (argMultimap.getValue(PREFIX_SYMPTOM).map(v -> !v.isEmpty()).orElse(false)
-                || argMultimap.getValue(PREFIX_NOTES).map(v -> !v.isEmpty()).orElse(false)) {
-            throw new ParseException(DeleteCommand.MESSAGE_VALUE_NOT_ALLOWED);
+        if (argMultimap.getValue(PREFIX_NOTES).map(v -> !v.isEmpty()).orElse(false)) {
+            throw new ParseException(String.format(DeleteCommand.MESSAGE_VALUE_NOT_ALLOWED, PREFIX_NOTES));
         }
 
-        Set<Prefix> prefixes = argMultimap.getPrefixes();
+        Map<Prefix, List<String>> prefixesMap = argMultimap.getPrefixesMap();
 
-        logger.fine("Indices: " + indicesString + "; Prefixes: " + prefixes);
+        logger.fine("Indices: " + indicesString + "; Prefixes: " + prefixesMap);
 
         if (indicesString.contains(MULTIPLE_INDICES_DELIMITER)) {
-            return parseMultipleIndices(indicesString, prefixes);
+            return parseMultipleIndices(indicesString, prefixesMap);
         } else if (indicesString.contains(RANGE_INDICES_DELIMITER)) {
-            return parseRangeIndices(indicesString, prefixes);
+            return parseRangeIndices(indicesString, prefixesMap);
         } else {
-            return parseSingleIndex(indicesString, prefixes);
+            return parseSingleIndex(indicesString, prefixesMap);
         }
     }
 
-    private DeleteCommand parseSingleIndex(String indexString, Set<Prefix> prefixes) throws ParseException {
+    private DeleteCommand parseSingleIndex(String indexString, Map<Prefix, List<String>> prefixesMap)
+            throws ParseException {
         Index index;
         try {
             index = ParserUtil.parseIndex(indexString);
@@ -85,10 +86,11 @@ public class DeleteCommandParser implements Parser<DeleteCommand> {
                     String.format(MESSAGE_INVALID_COMMAND_FORMAT, SingleDeleteCommand.MESSAGE_USAGE), pe);
         }
 
-        return new SingleDeleteCommand(index, prefixes);
+        return new SingleDeleteCommand(index, prefixesMap);
     }
 
-    private DeleteCommand parseMultipleIndices(String indicesString, Set<Prefix> prefixes) throws ParseException {
+    private DeleteCommand parseMultipleIndices(String indicesString, Map<Prefix, List<String>> prefixesMap)
+            throws ParseException {
         final Matcher matcher = MULTIPLE_INDICES_ARGUMENT_FORMAT.matcher(indicesString.trim());
         if (!matcher.matches()) {
             throw new ParseException(
@@ -106,10 +108,11 @@ public class DeleteCommandParser implements Parser<DeleteCommand> {
             }
         }
 
-        return new MultipleDeleteCommand(indices, prefixes);
+        return new MultipleDeleteCommand(indices, prefixesMap);
     }
 
-    private DeleteCommand parseRangeIndices(String indicesString, Set<Prefix> prefixes) throws ParseException {
+    private DeleteCommand parseRangeIndices(String indicesString, Map<Prefix, List<String>> prefixesMap)
+            throws ParseException {
         final Matcher matcher = RANGE_ARGUMENT_FORMAT.matcher(indicesString.trim());
         if (!matcher.matches()) {
             throw new ParseException(
@@ -126,7 +129,7 @@ public class DeleteCommandParser implements Parser<DeleteCommand> {
                     String.format(MESSAGE_INVALID_COMMAND_FORMAT, RangeDeleteCommand.MESSAGE_USAGE), pe);
         }
 
-        return new RangeDeleteCommand(startIndex, endIndex, prefixes);
+        return new RangeDeleteCommand(startIndex, endIndex, prefixesMap);
     }
 
     private ArgumentMultimap tokenizeArgs(String args) {
@@ -161,9 +164,9 @@ public class DeleteCommandParser implements Parser<DeleteCommand> {
         }
 
         try {
-            argMultimap.verifyNoDuplicatePrefixesFor(PREFIX_SYMPTOM, PREFIX_NOTES);
+            argMultimap.verifyNoDuplicatePrefixesFor(PREFIX_NOTES);
         } catch (ParseException pe) {
-            throw new ParseException(DeleteCommand.MESSAGE_DUPLICATE_PREFIXES);
+            throw new ParseException(String.format(DeleteCommand.MESSAGE_DUPLICATE_PREFIXES, PREFIX_NOTES));
         }
     }
 }

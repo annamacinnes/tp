@@ -4,6 +4,9 @@ import static java.util.Objects.requireNonNull;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTES;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_SYMPTOM;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import seedu.address.commons.core.index.Index;
@@ -43,45 +46,66 @@ public abstract class DeleteCommand extends Command {
     public static final String MESSAGE_DELETE_PERSON_SUCCESS = "Deleted Person(s): %1$s";
     public static final String MESSAGE_DELETE_FIELD_SUCCESS = "Deleted field(s) for Person(s): %1$s";
     public static final String MESSAGE_DUPLICATE_PREFIXES =
-            "Duplicate prefixes are not allowed. Each prefix should only be specified once.";
+            "Duplicate prefixes are not allowed for the following prefixes: %1$s\n"
+                    + "Please specify the prefix only once.";
     public static final String MESSAGE_VALUE_NOT_ALLOWED =
-            "Values are not allowed for the prefixes. Please specify only the prefix without any value.";
-    public static final String MESSAGE_NO_VALUE_FOR_PERSON =
-            "One or more specified person(s) do not have any value for the specified prefix(es).";
+            "Values are not allowed for the following prefixes: %1$s\n"
+                    + "Please specify only the prefix without any value.";
+    public static final String MESSAGE_VALUE_NOT_FOUND =
+            "One or more specified person(s) do not have the required value(s) for the specified prefix(es).";
 
-    private Set<Prefix> prefixes;
+    private Map<Prefix, List<String>> prefixesMap;
 
-    public DeleteCommand(Set<Prefix> prefixes) {
-        this.prefixes = prefixes;
+    public DeleteCommand(Map<Prefix, List<String>> prefixesMap) {
+        this.prefixesMap = prefixesMap;
+    }
+
+    public Map<Prefix, List<String>> getPrefixesMap() {
+        return prefixesMap;
     }
 
     public Set<Prefix> getPrefixes() {
-        return prefixes;
+        return prefixesMap.keySet();
     }
 
     public abstract Set<Index> getTargetIndicesAsSet();
 
     public Person getUpdatedPerson(Person personToDelete) throws CommandException {
         requireNonNull(personToDelete);
-        assert !prefixes.isEmpty() : "There are no specified fields to delete.";
+        assert !prefixesMap.isEmpty() : "There are no specified fields to delete.";
 
-        if (prefixes.contains(PREFIX_SYMPTOM) && personToDelete.getSymptoms().isEmpty()
-                || prefixes.contains(PREFIX_NOTES) && personToDelete.getNotes().getValue().isEmpty()) {
-            throw new CommandException(MESSAGE_NO_VALUE_FOR_PERSON);
+        if (prefixesMap.containsKey(PREFIX_SYMPTOM) && personToDelete.getSymptoms().isEmpty()
+                || prefixesMap.containsKey(PREFIX_NOTES) && personToDelete.getNotes().getValue().isEmpty()) {
+            throw new CommandException(MESSAGE_VALUE_NOT_FOUND);
+        }
+
+        List<Symptom> symptomsToDelete = prefixesMap.getOrDefault(PREFIX_SYMPTOM, List.of()).stream()
+                .map(Symptom::new)
+                .toList();
+        Set<Symptom> updatedSymptoms = new HashSet<>(personToDelete.getSymptoms()); // instantiate with all symptoms
+        if (prefixesMap.containsKey(PREFIX_SYMPTOM) && symptomsToDelete.isEmpty()) { // delete all symptoms
+            updatedSymptoms.clear();
+        } else if (prefixesMap.containsKey(PREFIX_SYMPTOM)) { // delete specified symptoms
+            for (Symptom symptom : symptomsToDelete) {
+                if (!updatedSymptoms.contains(symptom)) {
+                    throw new CommandException(MESSAGE_VALUE_NOT_FOUND);
+                }
+                updatedSymptoms.remove(symptom);
+            }
         }
 
         Name name = personToDelete.getName();
         Phone phone = personToDelete.getPhone();
         Email email = personToDelete.getEmail();
         Address address = personToDelete.getAddress();
-        Set<Symptom> updatedSymptoms = prefixes.contains(PREFIX_SYMPTOM) ? Set.of() : personToDelete.getSymptoms();
         Ic ic = personToDelete.getIc();
         UrgencyLevel urgencyLevel = personToDelete.getUrgencyLevel();
         NextOfKinPhone nextOfKinPhone = personToDelete.getNextOfKinPhone();
         DoctorName doctorName = personToDelete.getDoctorName();
         NextOfKin nextOfKin = personToDelete.getNextOfKin();
         NextOfKinRelationship nextOfKinRelationship = personToDelete.getNextOfKinRelationship();
-        Notes updatedNotes = prefixes.contains(PREFIX_NOTES) ? new Notes("") : personToDelete.getNotes();
+        Notes updatedNotes =
+                prefixesMap.containsKey(PREFIX_NOTES) ? new Notes("") : personToDelete.getNotes();
 
         return new Person(name, phone, email, address, updatedSymptoms, ic,
                  urgencyLevel, nextOfKinPhone, doctorName, nextOfKin, nextOfKinRelationship, updatedNotes);
@@ -113,14 +137,14 @@ public abstract class DeleteCommand extends Command {
 
         DeleteCommand otherDeleteCommand = (DeleteCommand) other;
         return this.getTargetIndicesAsSet().equals(otherDeleteCommand.getTargetIndicesAsSet())
-                && this.getPrefixes().equals(otherDeleteCommand.getPrefixes());
+                && this.getPrefixesMap().equals(otherDeleteCommand.getPrefixesMap());
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .add("targetIndices", this.getTargetIndicesAsSet())
-                .add("prefixes", this.getPrefixes())
+                .add("prefixes", this.getPrefixesMap())
                 .toString();
     }
 }

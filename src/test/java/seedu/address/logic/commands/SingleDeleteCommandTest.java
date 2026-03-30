@@ -112,7 +112,7 @@ public class SingleDeleteCommandTest {
         DeleteCommand deleteCommand =
                 new SingleDeleteCommand(INDEX_SECOND_PERSON, Set.of(PREFIX_SYMPTOM, PREFIX_NOTES));
 
-        assertCommandFailure(deleteCommand, model, DeleteCommand.MESSAGE_NO_VALUE_FOR_PERSON);
+        assertCommandFailure(deleteCommand, model, DeleteCommand.MESSAGE_VALUE_NOT_FOUND);
     }
 
     @Test
@@ -150,7 +150,7 @@ public class SingleDeleteCommandTest {
 
         DeleteCommand deleteCommand = new SingleDeleteCommand(INDEX_FIRST_PERSON, Set.of(PREFIX_NOTES));
 
-        assertCommandFailure(deleteCommand, model, DeleteCommand.MESSAGE_NO_VALUE_FOR_PERSON);
+        assertCommandFailure(deleteCommand, model, DeleteCommand.MESSAGE_VALUE_NOT_FOUND);
     }
 
     @Test

@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import seedu.address.logic.Messages;
@@ -64,12 +63,12 @@ public class ArgumentMultimap {
     }
 
     /**
-     * Returns the set of all prefixes that have at least one argument value.
+     * Returns a map of all prefixes to their respective argument values.
      */
-    public Set<Prefix> getPrefixes() {
-        Set<Prefix> prefixes = argMultimap.keySet();
-        prefixes.remove(new Prefix(""));
-        return prefixes;
+    public Map<Prefix, List<String>> getPrefixesMap() {
+        Map<Prefix, List<String>> prefixesMap = new HashMap<>(argMultimap);
+        prefixesMap.remove(new Prefix(""));
+        return prefixesMap;
     }
 
     /**
