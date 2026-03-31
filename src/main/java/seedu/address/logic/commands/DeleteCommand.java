@@ -46,13 +46,19 @@ public abstract class DeleteCommand extends Command {
             + "Parameters: INDEX(ES) PREFIX [PREFIX ...] (must be optional fields)\n"
             + "Example: " + COMMAND_WORD + " 1,3,5 " + PREFIX_SYMPTOM + " " + PREFIX_NOTES;
 
-    public static final String MESSAGE_DELETE_PERSON_SUCCESS = "Deleted Person(s): %1$s";
-    public static final String MESSAGE_DELETE_FIELD_SUCCESS = "Deleted field(s) for Person(s): %1$s";
+    public static final String MESSAGE_DELETE_PERSON_SUCCESS = "Deleted person(s): %1$s";
+    public static final String MESSAGE_DELETE_FIELD_SUCCESS = "Deleted field value(s) for person(s): %1$s";
+    public static final String MESSAGE_NON_OPTIONAL_FIELD_PREFIXES =
+            "The following prefixes are not optional fields and cannot be used for deletion: %1$s\n"
+                    + "Please specify only optional field prefixes.";
     public static final String MESSAGE_DUPLICATE_PREFIXES =
-            "Duplicate prefixes are not allowed for the following prefixes: %1$s\n"
-                    + "Please specify the prefix only once.";
+            "For all values deletion, duplicates are not allowed for the following prefix: %1$s\n"
+                    + "Please specify the prefix only once without any value.";
+    public static final String MESSAGE_VALUE_MISSING =
+            "For specific value deletion, values must be provided for all instances of the following prefix: %1$s\n"
+                    + "Please specify the values to delete for each prefix.";
     public static final String MESSAGE_VALUE_NOT_ALLOWED =
-            "Values are not allowed for the following prefixes: %1$s\n"
+            "Values are not allowed for the following prefix: %1$s\n"
                     + "Please specify only the prefix without any value.";
     public static final String MESSAGE_VALUE_NOT_FOUND =
             "One or more specified person(s) do not have the required value(s) for the specified prefix(es).";
@@ -95,7 +101,7 @@ public abstract class DeleteCommand extends Command {
         Set<Symptom> updatedSymptoms = new HashSet<>(personToDelete.getSymptoms()); // instantiate with all symptoms
         if (prefixMap.containsKey(PREFIX_SYMPTOM) && symptomsToDelete.isEmpty()) { // delete all symptoms
             updatedSymptoms.clear();
-        } else if (prefixMap.containsKey(PREFIX_SYMPTOM)) { // delete specified symptoms
+        } else if (prefixMap.containsKey(PREFIX_SYMPTOM)) { // delete specific symptoms
             for (Symptom symptom : symptomsToDelete) {
                 if (!updatedSymptoms.contains(symptom)) {
                     throw new CommandException(MESSAGE_VALUE_NOT_FOUND);

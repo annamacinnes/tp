@@ -9,6 +9,7 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_IC;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NEXT_OF_KIN;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NEXT_OF_KIN_PHONE;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_NEXT_OF_KIN_RELATIONSHIP;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTES;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PATIENT_NAME;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_PATIENT_PHONE;
@@ -20,6 +21,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import seedu.address.commons.core.LogsCenter;
 import seedu.address.commons.core.index.Index;
@@ -52,27 +54,19 @@ public class DeleteCommandParser implements Parser<DeleteCommand> {
         requireNonNull(args);
         ArgumentMultimap argMultimap = tokenizeArgs(args);
 
+        verifyNoInvalidArguments(argMultimap);
+
         final String indicesString = argMultimap.getPreamble();
-        if (indicesString.isEmpty()) {
-            throw new ParseException(String.format(MESSAGE_MISSING_PERSON_INDEX, DeleteCommand.MESSAGE_USAGE));
-        }
+        Map<Prefix, List<String>> prefixMap = argMultimap.getPrefixMap();
 
-        verifyNoInvalidPrefixes(argMultimap);
-
-        if (argMultimap.getValue(PREFIX_NOTES).map(v -> !v.isEmpty()).orElse(false)) {
-            throw new ParseException(String.format(DeleteCommand.MESSAGE_VALUE_NOT_ALLOWED, PREFIX_NOTES));
-        }
-
-        Map<Prefix, List<String>> prefixesMap = argMultimap.getPrefixesMap();
-
-        logger.fine("Indices: " + indicesString + "; Prefixes: " + prefixesMap);
+        logger.fine("Indices: " + indicesString + "; Prefixes: " + prefixMap);
 
         if (indicesString.contains(MULTIPLE_INDICES_DELIMITER)) {
-            return parseMultipleIndices(indicesString, prefixesMap);
+            return parseMultipleIndices(indicesString, prefixMap);
         } else if (indicesString.contains(RANGE_INDICES_DELIMITER)) {
-            return parseRangeIndices(indicesString, prefixesMap);
+            return parseRangeIndices(indicesString, prefixMap);
         } else {
-            return parseSingleIndex(indicesString, prefixesMap);
+            return parseSingleIndex(indicesString, prefixMap);
         }
     }
 
@@ -148,8 +142,13 @@ public class DeleteCommandParser implements Parser<DeleteCommand> {
         );
     }
 
-    private void verifyNoInvalidPrefixes(ArgumentMultimap argMultimap) throws ParseException {
-        if (argMultimap.areAnyPrefixesPresent(
+    private void verifyNoInvalidArguments(ArgumentMultimap argMultimap) throws ParseException {
+        // check indices string not empty
+        if (argMultimap.getPreamble().isEmpty()) {
+            throw new ParseException(String.format(MESSAGE_MISSING_PERSON_INDEX, DeleteCommand.MESSAGE_USAGE));
+        }
+
+        List<Prefix> nonOptionalPrefixes = argMultimap.getExistingPrefixes(
                 PREFIX_PATIENT_NAME,
                 PREFIX_PATIENT_PHONE,
                 PREFIX_EMAIL,
@@ -158,15 +157,34 @@ public class DeleteCommandParser implements Parser<DeleteCommand> {
                 PREFIX_URGENCY,
                 PREFIX_NEXT_OF_KIN,
                 PREFIX_NEXT_OF_KIN_PHONE,
-                PREFIX_DOCTOR)) {
-            throw new ParseException(String.format(
-                    MESSAGE_INVALID_COMMAND_FORMAT, DeleteCommand.MESSAGE_DELETE_FIELD_USAGE));
+                PREFIX_NEXT_OF_KIN_RELATIONSHIP,
+                PREFIX_DOCTOR
+        );
+        // check non-optional fields not provided
+        if (!nonOptionalPrefixes.isEmpty()) {
+            throw new ParseException(String.format(DeleteCommand.MESSAGE_NON_OPTIONAL_FIELD_PREFIXES,
+                    nonOptionalPrefixes.stream().map(Prefix::toString).collect(Collectors.joining(", "))));
         }
 
-        try {
-            argMultimap.verifyNoDuplicatePrefixesFor(PREFIX_NOTES);
-        } catch (ParseException pe) {
+        List<String> notesValues = argMultimap.getAllValues(PREFIX_NOTES);
+        // check no duplicate notes prefix
+        if (notesValues.size() > 1) {
             throw new ParseException(String.format(DeleteCommand.MESSAGE_DUPLICATE_PREFIXES, PREFIX_NOTES));
+        // check no values provided for notes prefix
+        } else if (notesValues.size() == 1 && !notesValues.get(0).isEmpty()) {
+            throw new ParseException(String.format(DeleteCommand.MESSAGE_VALUE_NOT_ALLOWED, PREFIX_NOTES));
+        }
+
+        List<String> symptomValues = argMultimap.getAllValues(PREFIX_SYMPTOM);
+        List<String> nonEmptySymptomValues = symptomValues.stream()
+                .filter(s -> !s.isEmpty())
+                .toList();
+        // check values provided for all the symptoms prefixes
+        if (!nonEmptySymptomValues.isEmpty() && nonEmptySymptomValues.size() != symptomValues.size()) {
+            throw new ParseException(String.format(DeleteCommand.MESSAGE_VALUE_MISSING, PREFIX_SYMPTOM));
+        // check no duplicate symptoms prefix when all symptoms values are empty
+        } else if (nonEmptySymptomValues.isEmpty() && symptomValues.size() > 1) {
+            throw new ParseException(String.format(DeleteCommand.MESSAGE_DUPLICATE_PREFIXES, PREFIX_SYMPTOM));
         }
     }
 }

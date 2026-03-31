@@ -2,7 +2,10 @@ package seedu.address.logic.parser;
 
 import static seedu.address.logic.Messages.MESSAGE_INVALID_COMMAND_FORMAT;
 import static seedu.address.logic.Messages.MESSAGE_MISSING_PERSON_INDEX;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_EMAIL;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_NOTES;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_PATIENT_PHONE;
+import static seedu.address.logic.parser.CliSyntax.PREFIX_SYMPTOM;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseFailure;
 import static seedu.address.logic.parser.CommandParserTestUtil.assertParseSuccess;
 import static seedu.address.testutil.TypicalIndexes.INDEX_FIRST_PERSON;
@@ -127,23 +130,20 @@ public class DeleteCommandParserTest {
 
     @Test
     public void parse_validArgsSingleIndexWithPrefixes_returnsDeleteCommand() {
-        assertParseSuccess(parser, "1 n/ s/",
-                new SingleDeleteCommand(INDEX_FIRST_PERSON,
-                        Map.of(new Prefix("n/"), List.of(), new Prefix("s/"), List.of())));
+        assertParseSuccess(parser, "1 n/ s/", new SingleDeleteCommand(INDEX_FIRST_PERSON,
+                Map.of(new Prefix("n/"), List.of(), new Prefix("s/"), List.of())));
     }
 
     @Test
     public void parse_validArgsMultipleIndicesWithPrefix_returnsDeleteCommand() {
         assertParseSuccess(parser, "1,2 s/", new MultipleDeleteCommand(
-                new Index[]{ INDEX_FIRST_PERSON, INDEX_SECOND_PERSON },
-                Map.of(new Prefix("s/"), List.of())));
+                new Index[]{ INDEX_FIRST_PERSON, INDEX_SECOND_PERSON }, Map.of(new Prefix("s/"), List.of())));
     }
 
     @Test
     public void parse_validArgsRangeIndicesWithPrefix_returnsDeleteCommand() {
         assertParseSuccess(parser, "1-2 n/", new RangeDeleteCommand(
-                INDEX_FIRST_PERSON, INDEX_SECOND_PERSON,
-                Map.of(new Prefix("n/"), List.of())));
+                INDEX_FIRST_PERSON, INDEX_SECOND_PERSON, Map.of(new Prefix("n/"), List.of())));
     }
 
     @Test
@@ -153,21 +153,45 @@ public class DeleteCommandParserTest {
     }
 
     @Test
-    public void parse_invalidArgsSymptomsPrefixWithValue_returnsDeleteCommand() {
+    public void parse_validArgsSymptomsPrefixWithValue_returnsDeleteCommand() {
         assertParseSuccess(parser, "1 s/symptom",
                 new SingleDeleteCommand(INDEX_FIRST_PERSON, Map.of(new Prefix("s/"), List.of("symptom"))));
     }
 
     @Test
+    public void parse_validArgsSymptomsPrefixesWithValue_returnsDeleteCommand() {
+        assertParseSuccess(parser, "1 s/fever s/cough",
+                new SingleDeleteCommand(INDEX_FIRST_PERSON, Map.of(new Prefix("s/"), List.of("fever", "cough"))));
+    }
+
+    @Test
     public void parse_invalidArgsDuplicateNotesPrefix_throwsParseException() {
-        assertParseFailure(parser, "1 n/ n/",
-                String.format(DeleteCommand.MESSAGE_DUPLICATE_PREFIXES, PREFIX_NOTES));
+        assertParseFailure(parser, "1 n/ n/", String.format(
+                DeleteCommand.MESSAGE_DUPLICATE_PREFIXES, PREFIX_NOTES));
+    }
+
+    @Test
+    public void parse_invalidArgsDuplicateSymptomsPrefix_throwsParseException() {
+        assertParseFailure(parser, "1 s/ s/", String.format(
+                DeleteCommand.MESSAGE_DUPLICATE_PREFIXES, PREFIX_SYMPTOM));
+    }
+
+    @Test
+    public void parse_invalidArgsMissingValueSymptomsPrefix_throwsParseException() {
+        assertParseFailure(parser, "1 s/fever s/", String.format(
+                DeleteCommand.MESSAGE_VALUE_MISSING, PREFIX_SYMPTOM));
     }
 
     @Test
     public void parse_invalidArgsNonOptionalFieldPrefix_throwsParseException() {
         assertParseFailure(parser, "1 p/", String.format(
-                MESSAGE_INVALID_COMMAND_FORMAT, DeleteCommand.MESSAGE_DELETE_FIELD_USAGE));
+                DeleteCommand.MESSAGE_NON_OPTIONAL_FIELD_PREFIXES, PREFIX_PATIENT_PHONE));
+    }
+
+    @Test
+    public void parse_invalidArgsNonOptionalFieldPrefixes_throwsParseException() {
+        assertParseFailure(parser, "1 p/ e/", String.format(
+                DeleteCommand.MESSAGE_NON_OPTIONAL_FIELD_PREFIXES, PREFIX_PATIENT_PHONE + ", " + PREFIX_EMAIL));
     }
 
     @Test
