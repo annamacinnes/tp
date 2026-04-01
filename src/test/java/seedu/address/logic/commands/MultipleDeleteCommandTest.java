@@ -114,14 +114,16 @@ public class MultipleDeleteCommandTest {
     @Test
     public void execute_validPrefixUnfilteredList_success() {
         Person firstTargetPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
-        Person secondTargetPerson = model.getFilteredPersonList().get(INDEX_THIRD_PERSON.getZeroBased());
-        assertFalse(firstTargetPerson.getSymptoms().isEmpty(),
+        Person secondTargetPerson = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
+        firstTargetPerson = modifyPerson(model, firstTargetPerson, true, true);
+        secondTargetPerson = modifyPerson(model, secondTargetPerson, true, true);
+        assertTrue(hasSymptoms(firstTargetPerson),
                 "Precondition failed: target person should have symptoms.");
-        assertFalse(secondTargetPerson.getSymptoms().isEmpty(),
+        assertTrue(hasSymptoms(secondTargetPerson),
                 "Precondition failed: target person should have symptoms.");
 
         DeleteCommand deleteCommand = new MultipleDeleteCommand(
-                new Index[]{ INDEX_FIRST_PERSON, INDEX_THIRD_PERSON }, Map.of(PREFIX_SYMPTOM, List.of()));
+                new Index[]{ INDEX_FIRST_PERSON, INDEX_SECOND_PERSON }, Map.of(PREFIX_SYMPTOM, List.of()));
 
         Person firstExpectedPerson = new PersonBuilder(firstTargetPerson).withSymptoms().build();
         Person secondExpectedPerson = new PersonBuilder(secondTargetPerson).withSymptoms().build();
@@ -138,7 +140,8 @@ public class MultipleDeleteCommandTest {
     @Test
     public void execute_missingFieldValueUnfilteredList_throwsCommandException() {
         Person secondTargetPerson = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
-        assertTrue(secondTargetPerson.getSymptoms().isEmpty(),
+        secondTargetPerson = modifyPerson(model, secondTargetPerson, false, true);
+        assertTrue(!hasSymptoms(secondTargetPerson),
                 "Precondition failed: target person should not have symptoms.");
 
         DeleteCommand deleteCommand = new MultipleDeleteCommand(
@@ -153,10 +156,10 @@ public class MultipleDeleteCommandTest {
 
         Person firstTargetPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
         Person secondTargetPerson = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
-        assertFalse(firstTargetPerson.getNotes().getValue().isEmpty(),
-                "Precondition failed: target person should have notes.");
-        assertFalse(secondTargetPerson.getNotes().getValue().isEmpty(),
-                "Precondition failed: target person should have notes.");
+        firstTargetPerson = modifyPerson(model, firstTargetPerson, true, true);
+        secondTargetPerson = modifyPerson(model, secondTargetPerson, true, true);
+        assertTrue(hasNotes(firstTargetPerson), "Precondition failed: target person should have notes.");
+        assertTrue(hasNotes(secondTargetPerson), "Precondition failed: target person should have notes.");
 
         DeleteCommand deleteCommand = new MultipleDeleteCommand(
                 new Index[]{ INDEX_FIRST_PERSON, INDEX_SECOND_PERSON }, Map.of(PREFIX_NOTES, List.of()));
@@ -179,7 +182,8 @@ public class MultipleDeleteCommandTest {
         showPersonsInIndexRange(model, INDEX_FIRST_PERSON, INDEX_SECOND_PERSON);
 
         Person secondTargetPerson = model.getFilteredPersonList().get(INDEX_SECOND_PERSON.getZeroBased());
-        assertTrue(secondTargetPerson.getSymptoms().isEmpty(),
+        secondTargetPerson = modifyPerson(model, secondTargetPerson, false, true);
+        assertTrue(!hasSymptoms(secondTargetPerson),
                 "Precondition failed: target person should not have symptoms.");
 
         DeleteCommand deleteCommand = new MultipleDeleteCommand(
@@ -289,5 +293,37 @@ public class MultipleDeleteCommandTest {
         model.updateFilteredPersonList(p -> false);
 
         assertTrue(model.getFilteredPersonList().isEmpty());
+    }
+
+    /**
+     * Modifies the person in the model to meet the requirements and returns that person.
+     */
+    private Person modifyPerson(Model model, Person personToModify, boolean hasSymptoms, boolean hasNotes) {
+        PersonBuilder modifiedPersonBuilder = new PersonBuilder(personToModify);
+
+        if (hasSymptoms && !hasSymptoms(personToModify)) {
+            modifiedPersonBuilder.withSymptoms("fever", "cough");
+        } else if (!hasSymptoms && hasSymptoms(personToModify)) {
+            modifiedPersonBuilder.withSymptoms();
+        }
+
+        if (hasNotes && !hasNotes(personToModify)) {
+            modifiedPersonBuilder.withNotes("Stays up late to do CS2103");
+        } else if (!hasNotes && hasNotes(personToModify)) {
+            modifiedPersonBuilder.withNotes("");
+        }
+
+        Person modifiedPerson = modifiedPersonBuilder.build();
+        model.setPerson(personToModify, modifiedPerson);
+
+        return modifiedPerson;
+    }
+
+    private boolean hasSymptoms(Person person) {
+        return !person.getSymptoms().isEmpty();
+    }
+
+    private boolean hasNotes(Person person) {
+        return !person.getNotes().getValue().isEmpty();
     }
 }

@@ -104,6 +104,8 @@ public class Messages {
                 .append(person.getUrgencyLevel())
                 .append("; Next of Kin: ")
                 .append(person.getNextOfKin())
+                .append("; Next of Kin relationship: ")
+                .append(person.getNextOfKinRelationship())
                 .append("; Next of Kin phone: ")
                 .append(person.getNextOfKinPhone())
                 .append("; Doctor: ")
