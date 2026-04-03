@@ -3,6 +3,10 @@ package seedu.address.ui;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Manages the history of commands entered by the user. It allows adding new commands to the history and navigating
+ * through the history using the up and down arrow keys.
+ */
 public class CommandHistory {
 
     private final List<String> commandHistory = new ArrayList<>();
@@ -19,13 +23,12 @@ public class CommandHistory {
      */
     public void addCommand(String command) {
         assert command != null;
-        if(isDuplicateCommand(command)) {
+        if (isDuplicateCommand(command)) {
             removeAllDuplicateCommand(command);
         }
         commandHistory.add(command);
         historyIndex = commandHistory.size();
-        currentInput="";
-
+        currentInput = "";
     }
 
     private void removeAllDuplicateCommand(String command) {
