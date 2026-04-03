@@ -22,7 +22,7 @@ public class Symptom {
     public Symptom(String symptomName) {
         requireNonNull(symptomName);
         checkArgument(isValidSymptomName(symptomName), MESSAGE_CONSTRAINTS);
-        this.symptomName = symptomName;
+        this.symptomName = symptomName.toLowerCase();
     }
 
     /**
