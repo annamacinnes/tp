@@ -17,6 +17,7 @@ import seedu.address.model.person.DoctorName;
 import seedu.address.model.person.DoctorNameContainsKeywordsPredicate;
 import seedu.address.model.person.EmailContainsKeywordsPredicate;
 import seedu.address.model.person.Ic;
+import seedu.address.model.person.Name;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
 
@@ -59,6 +60,11 @@ public class FindCommandParser implements Parser<FindCommand> {
         // Legacy behaviour: no prefixes, treat entire args as name keywords
         if (!hasName && !hasIc && !hasPhone && !hasEmail && !hasDoctor) {
             List<String> legacyKeywords = Arrays.asList(trimmedArgs.split("\\s+"));
+            for (String keyword : legacyKeywords) {
+                if (!Name.isValidName(keyword)) {
+                    throw new ParseException(Name.MESSAGE_CONSTRAINTS);
+                }
+            }
             String criteriaDescription = "Patient Name: " + trimmedArgs;
             return new FindCommand(new NameContainsKeywordsPredicate(legacyKeywords), criteriaDescription);
         }
@@ -73,6 +79,11 @@ public class FindCommandParser implements Parser<FindCommand> {
                         String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
             }
             List<String> nameKeywords = Arrays.asList(nameArgs.split("\\s+"));
+            for (String keyword : nameKeywords) {
+                if (!Name.isValidName(keyword)) {
+                    throw new ParseException(Name.MESSAGE_CONSTRAINTS);
+                }
+            }
             Predicate<Person> namePredicate = new NameContainsKeywordsPredicate(nameKeywords);
             // Name is checked first, so `predicate` must still be null here.
             predicate = namePredicate;
