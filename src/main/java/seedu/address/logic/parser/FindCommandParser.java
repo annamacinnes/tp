@@ -13,8 +13,10 @@ import java.util.function.Predicate;
 
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.person.DoctorName;
 import seedu.address.model.person.DoctorNameContainsKeywordsPredicate;
 import seedu.address.model.person.EmailContainsKeywordsPredicate;
+import seedu.address.model.person.Ic;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
 
@@ -83,8 +85,8 @@ public class FindCommandParser implements Parser<FindCommand> {
                 throw new ParseException(
                         String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
             }
-            String icToMatch = icArg;
-            Predicate<Person> icPredicate = person -> person.getIc().value.equalsIgnoreCase(icToMatch);
+            Ic parsedIc = ParserUtil.parseIc(icArg);
+            Predicate<Person> icPredicate = person -> person.getIc().equals(parsedIc);
             predicate = predicate == null ? icPredicate : predicate.or(icPredicate);
             if (criteriaBuilder.length() > 0) {
                 criteriaBuilder.append(", ");
@@ -129,6 +131,11 @@ public class FindCommandParser implements Parser<FindCommand> {
                         String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
             }
             List<String> doctorNameKeywords = Arrays.asList(doctorArg.split("\\s+"));
+            for (String keyword : doctorNameKeywords) {
+                if (!DoctorName.isValidName(keyword)) {
+                    throw new ParseException(DoctorName.MESSAGE_CONSTRAINTS);
+                }
+            }
             Predicate<Person> doctorNamePredicate = new DoctorNameContainsKeywordsPredicate(doctorNameKeywords);
             predicate = predicate == null ? doctorNamePredicate : predicate.or(doctorNamePredicate);
             if (criteriaBuilder.length() > 0) {

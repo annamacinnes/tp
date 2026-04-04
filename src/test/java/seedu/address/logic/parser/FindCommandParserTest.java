@@ -16,6 +16,8 @@ import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.commands.FindCommand;
+import seedu.address.model.person.DoctorName;
+import seedu.address.model.person.Ic;
 import seedu.address.model.person.DoctorNameContainsKeywordsPredicate;
 import seedu.address.model.person.EmailContainsKeywordsPredicate;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
@@ -85,6 +87,17 @@ public class FindCommandParserTest {
     @Test
     public void parse_validIcPrefix_doesNotThrow() {
         assertDoesNotThrow(() -> parser.parse(" ic/S1234567A"));
+    }
+
+    @Test
+    public void parse_invalidIcPrefix_throwsParseException() {
+        assertParseFailure(parser, " ic/S1234567", Ic.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
+    public void parse_invalidDoctorPrefix_throwsParseException() {
+        assertParseFailure(parser, " d/John123", DoctorName.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, " d/Dr@Smith", DoctorName.MESSAGE_CONSTRAINTS);
     }
 
     @Test
