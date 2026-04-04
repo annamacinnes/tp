@@ -1,0 +1,30 @@
+@startuml
+!include style.puml
+skinparam arrowThickness 1.1
+skinparam arrowColor LOGIC_COLOR_T4
+skinparam classBackgroundColor LOGIC_COLOR
+
+Class "{abstract}\nCommand" as Command
+Class ListCommand
+Class "<<interface>>\nParser" as Parser
+Class ListCommandParser
+
+interface "<<interface>>\nModel" as Model {
+    +updateFilteredPersonList(Predicate)
+    +getFilteredPersonList()
+}
+
+ListCommand -up-|> Command
+ListCommandParser .up.|> Parser
+ListCommandParser ..> ListCommand : <<create>>
+ListCommand ..> Model
+
+note right of ListCommand
+  No arguments: show all persons
+  (PREDICATE_SHOW_ALL_PERSONS).
+  With u/ and s/ prefixes: combined
+  predicate (AND across urgency
+  and symptom filters).
+end note
+
+@enduml
