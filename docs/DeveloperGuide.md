@@ -255,6 +255,21 @@ The activity diagram below summarizes parsing and execution outcomes:
     * *Pros:* Faster for casual typing.
     * *Cons:* Ambiguity between urgency labels, symptom names, and future fields; worse error messages.
 
+### Add feature
+
+#### Implementation
+The add command lets users add a new patient to the address book. It is facilitated by the `AddCommand` and `AddCommandParser` classes. The behavior is as follows:
+
+1. Within the `AddCommandParser#parse` method, the arguments are tokenized using `ArgumentTokenizer#tokenize`. The tokenizer splits the raw input argument into key-value mappings based on the defined prefixes. Each prefix is associated with its corresponding parameter. Each parameter is then validated and parsed into the appropriate type using methods in the `ParserUtil` class (e.g. `ParserUtil#parseIc`, `ParserUtil#parseUrgency`, etc.).
+2. After all parameters are parsed and validated, a `Person` object is created with the parsed parameters, and an `AddCommand` object is returned with that `Person` object as a parameter.
+3. The `LogicManager` then executes the `AddCommand` object by calling its `execute` method.
+4. Within the `AddCommand#execute` method, the command first checks for duplicate patients by calling `Model#hasPerson`. If a duplicate is found, a `CommandException` is thrown. If not, the new patient is added to the model using `Model#addPerson`, and a success message is returned.
+
+Here is a sequence diagram showing when a **valid** add command is executed:
+
+<puml src="diagrams/AddSequenceDiagram.puml" alt="AddSequenceDiagram-Logic" />
+
+
 ### \[Proposed\] Undo/redo feature
 
 #### Proposed Implementation
@@ -347,10 +362,6 @@ The following activity diagram summarizes what happens when a user executes a ne
     * Cons: We must ensure that the implementation of each individual command are correct.
 
 _{more aspects and alternatives to be added}_
-
-### \[Proposed\] Data archiving
-
-_{Explain here how the data archiving feature will be implemented}_
 
 
 --------------------------------------------------------------------------------------------------------------------
