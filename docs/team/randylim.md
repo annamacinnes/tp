@@ -9,9 +9,9 @@ ClinicConnect is a CLI-based patient management tool for triage coordinators in 
 
 Given below are my contributions to the project.
 
-* **New Feature**: 
+* **New Feature**:
 
-* **New Feature**: 
+* **New Feature**:
 
 * **Code contributed**: [RepoSense link]()
 

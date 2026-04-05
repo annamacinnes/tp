@@ -71,7 +71,7 @@ Records comprehensive patient information (name, identification, contact details
 * **`p/`, `nkp/` (Phones):** Must contain exactly 8 digits (0-9 only).
 * **`u/` (Urgency):** Must be exactly one of: `low`, `moderate`, `high`, `extreme`.
 * **`nkr/` (Next of kin relationship):** May contain letters (A-Z, a-z), spaces, commas (,), hyphens (-), apostrophes ('), and periods (.).
-* 
+
 **Optional Fields:**
 * **`s/` (Symptoms):** Must be alphanumeric.
 * **`n/` (Notes):** Maximum length of 500 characters.
