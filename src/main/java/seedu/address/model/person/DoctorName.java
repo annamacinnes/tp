@@ -27,14 +27,14 @@ public class DoctorName {
     public DoctorName(String doctorName) {
         requireNonNull(doctorName);
         String trimmedDoctorName = doctorName.trim();
-        checkArgument(isValidName(trimmedDoctorName), MESSAGE_CONSTRAINTS);
+        checkArgument(isValidDoctorName(trimmedDoctorName), MESSAGE_CONSTRAINTS);
         this.fullName = trimmedDoctorName;
     }
 
     /**
      * Returns true if a given string is a valid doctor name.
      */
-    public static boolean isValidName(String test) {
+    public static boolean isValidDoctorName(String test) {
         return test.matches(VALIDATION_REGEX);
     }
 

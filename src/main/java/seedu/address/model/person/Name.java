@@ -16,6 +16,7 @@ public class Name {
 
     /*
      * The first character of the address must not be a whitespace,
+     *
      * otherwise " " (a blank string) becomes a valid input.
      */
     public static final String VALIDATION_REGEX = "[A-Za-z][A-Za-z ,.'-]*";
@@ -59,12 +60,12 @@ public class Name {
         }
 
         Name otherName = (Name) other;
-        return fullName.equals(otherName.fullName);
+        return fullName.equalsIgnoreCase(otherName.fullName);
     }
 
     @Override
     public int hashCode() {
-        return fullName.hashCode();
+        return fullName.toLowerCase().hashCode();
     }
 
 }

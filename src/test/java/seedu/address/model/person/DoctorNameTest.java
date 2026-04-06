@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import javax.print.Doc;
+
 import org.junit.jupiter.api.Test;
 
 public class DoctorNameTest {
@@ -18,6 +20,7 @@ public class DoctorNameTest {
         assertEquals("Dr. John O'Conner, M.D.", doctorName.getFullName());
     }
 
+    // A valid name with leading and trailing whitespaces
     @Test
     public void constructor_withLeadingAndTrailingWhitespaces_success() {
         String validName = "   Dr. Jane Doe  ";
@@ -26,17 +29,17 @@ public class DoctorNameTest {
     }
 
     @Test
-    public void constructor_nullName_throwsNullPointerException() {
+    public void constructor_null_throwsNullPointerException() {
         assertThrows(NullPointerException.class, () -> new DoctorName(null));
     }
 
     @Test
-    public void constructor_emptyName_throwsIllegalArgumentException() {
+    public void constructor_whiteSpacesOnlyDoctorName_throwsIllegalArgumentException() {
         assertThrows(IllegalArgumentException.class, () -> new DoctorName("   "));
     }
 
     @Test
-    public void constructor_invalidName_throwsIllegalArgumentException() {
+    public void constructor_invalidDoctorName_throwsIllegalArgumentException() {
         String invalidName = "Dr@John#Doe"; // contains invalid characters
         assertThrows(IllegalArgumentException.class, () -> new DoctorName(invalidName));
     }
@@ -45,21 +48,23 @@ public class DoctorNameTest {
     // isValidName tests
     @Test
     public void isValidName_validNames_returnsTrue() {
-        assertTrue(DoctorName.isValidName("John Doe"));
-        assertTrue(DoctorName.isValidName("O'Conner, Jane"));
-        assertTrue(DoctorName.isValidName("Anne-Marie Smith"));
-        assertTrue(DoctorName.isValidName("Dr. John A. Doe"));
-        assertTrue(DoctorName.isValidName("Dr John, M.D."));
+        assertTrue(DoctorName.isValidDoctorName("John Doe"));
+        assertTrue(DoctorName.isValidDoctorName("O'Conner, Jane"));
+        assertTrue(DoctorName.isValidDoctorName("Anne-Marie Smith"));
+        assertTrue(DoctorName.isValidDoctorName("Dr. John A. Doe"));
+        assertTrue(DoctorName.isValidDoctorName("Dr John, M.D."));
+        assertTrue(DoctorName.isValidDoctorName("John Doe   ")); // trailing whitespaces should be valid
     }
 
     @Test
     public void isValidName_invalidNames_returnsFalse() {
-        assertFalse(DoctorName.isValidName("")); // empty
-        assertFalse(DoctorName.isValidName("Dr@John")); // invalid characters
-        assertFalse(DoctorName.isValidName("John123")); // numbers not allowed
-        assertFalse(DoctorName.isValidName("Dr#Jane!")); // special characters #!
-        assertFalse(DoctorName.isValidName("   ")); // only whitespaces
-        assertFalse(DoctorName.isValidName("-Dr. John")); // does not start with an alphabetic character
+        assertFalse(DoctorName.isValidDoctorName("")); // empty
+        assertFalse(DoctorName.isValidDoctorName("Dr@John")); // invalid characters
+        assertFalse(DoctorName.isValidDoctorName("John123")); // numbers not allowed
+        assertFalse(DoctorName.isValidDoctorName("Dr#Jane!")); // special characters #!
+        assertFalse(DoctorName.isValidDoctorName("   ")); // only whitespaces
+        assertFalse(DoctorName.isValidDoctorName("-Dr. John")); // does not start with an alphabetic character
+        assertFalse(DoctorName.isValidDoctorName("  Dr. John")); // leading whitespace should be invalid
     }
 
     // Equals and hashCode tests
