@@ -7,7 +7,7 @@ import java.util.Objects;
 
 /**
  * Represents a Next-of-kin in the system.
- * Guarantees: immutable; name is validated and non-null.
+ * Guarantees: immutable; name is validated as declared in {@link #isValidNextOfKin(String)}
  */
 public class NextOfKin {
 
@@ -16,11 +16,6 @@ public class NextOfKin {
                     + "hyphens (-), apostrophe (‘), period (.).\n"
                     + "The next-of-kin name should not be empty and must start with a letter.\n";
 
-    public static final String MESSAGE_EMPTY =
-            "The next-of-kin field cannot be empty.";
-
-    // Regex: letters + allowed punctuation + spaces
-    // ^ start, $ end
     public static final String VALIDATION_REGEX = "[A-Za-z][A-Za-z ,.'-]*";
 
     private final String fullName;

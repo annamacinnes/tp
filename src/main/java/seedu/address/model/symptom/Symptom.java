@@ -10,10 +10,10 @@ import static seedu.address.commons.util.AppUtil.checkArgument;
 public class Symptom {
 
     public static final String MESSAGE_CONSTRAINTS =
-            "Symptom names can contain alphanumeric characters and internal whitespaces only.\n"
-                    + "It cannot be blank if the prefix is used.\n";
+            "Symptom names can contain alphanumeric characters and whitespaces only.\n"
+                    + "It cannot be blank if the prefix is used and must start with an alphanumeric character\n";
 
-    public static final String VALIDATION_REGEX = "\\p{Alnum}+";
+    public static final String VALIDATION_REGEX = "\\p{Alnum}[\\p{Alnum}\\s]*";
 
     public final String symptomName;
 
