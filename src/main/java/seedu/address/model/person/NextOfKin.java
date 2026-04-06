@@ -3,8 +3,6 @@ package seedu.address.model.person;
 import static java.util.Objects.requireNonNull;
 import static seedu.address.commons.util.AppUtil.checkArgument;
 
-import java.util.Objects;
-
 /**
  * Represents a Next-of-kin in the system.
  * Guarantees: immutable; name is validated as declared in {@link #isValidNextOfKin(String)}
