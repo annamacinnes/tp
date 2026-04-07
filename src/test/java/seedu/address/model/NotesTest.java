@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
+import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.person.Notes;
 import seedu.address.testutil.Assert;
 
@@ -65,7 +66,7 @@ public class NotesTest {
     }
 
     @Test
-    public void append_emptyAdditionalNotes_returnsOriginal() {
+    public void append_emptyAdditionalNotes_returnsOriginal() throws CommandException {
         // This turns Line 50 GREEN
         Notes original = new Notes("Existing Content");
         Notes emptyAppend = new Notes("");
@@ -73,7 +74,7 @@ public class NotesTest {
     }
 
     @Test
-    public void append_toEmptyNotes_returnsAdditional() {
+    public void append_toEmptyNotes_returnsAdditional() throws CommandException {
         // This turns Line 42 GREEN, while accounting for timestamps!
         Notes emptyOriginal = new Notes("");
         Notes toAppend = new Notes("New Content");
@@ -85,4 +86,5 @@ public class NotesTest {
 
         assertEquals(expectedNote, emptyOriginal.append(toAppend).toString());
     }
+
 }

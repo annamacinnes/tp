@@ -30,9 +30,8 @@ public class NextOfKin {
      * @param name A valid doctor name.
      */
     public NextOfKin(String name) {
-        Objects.requireNonNull(name);
-
         requireNonNull(name);
+        checkArgument(!name.trim().isEmpty(), MESSAGE_EMPTY);
         checkArgument(isValidNextOfKin(name), MESSAGE_CONSTRAINTS);
         fullName = name;
     }
