@@ -56,7 +56,7 @@ public class ParserUtil {
         }
 
         // Split strictly by comma
-        String[] splitIndices = trimmedIndices.split(",");
+        String[] splitIndices = trimmedIndices.split(",", -1);
         List<Index> indices = new ArrayList<>();
 
         for (String indexString : splitIndices) {
