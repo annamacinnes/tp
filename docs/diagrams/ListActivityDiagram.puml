@@ -1,0 +1,36 @@
+@startuml
+skin rose
+skinparam ActivityFontSize 15
+skinparam ArrowFontSize 12
+start
+:User executes list command;
+
+if () then ([no arguments])
+    :Create ListCommand\nwith show-all predicate;
+else ([has arguments])
+    :Tokenize u/ and s/ prefixes;
+    if () then ([preamble not empty])
+        :Throw ParseException;
+        stop
+    endif
+    :Parse urgency levels\nand symptom names;
+    :Build combined predicate\n(AND across filters);
+    :Create ListCommand\nwith criteria description;
+endif
+
+:ListCommand#execute(model);
+:Model#updateFilteredPersonList(predicate);
+
+if () then ([filtered count is 0])
+    if () then ([filter criteria was set])
+        :Throw CommandException\n(no matching patients);
+        stop
+    else ([show all on empty book])
+        :Return empty list message;
+        stop
+    endif
+else ([has visible patients])
+    :Return success message\nwith count (and criteria if filtered);
+endif
+stop
+@enduml

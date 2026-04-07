@@ -198,6 +198,63 @@ When a user executes a command that alters the patient list (like `add` or `upda
 
 **Reason for choosing Alternative 1:** In a clinical setting, data accuracy and immediate visibility of critical patients strictly outweigh the minor performance cost of automatic sorting. "Security by Design" principles dictate that the system should fail-safe; automatically sorting ensures no critical patient is ever accidentally hidden.
 
+### List feature
+
+#### Implementation
+
+The list mechanism lets users view either **all** patients or a **filtered** subset by **urgency level** (`u/`) and/or **symptoms** (`s/`). It is facilitated by **`ListCommand`** and **`ListCommandParser`**, which implement the following behaviour:
+
+* **`ListCommandParser#parse(String)`** — Tokenizes `u/` and `s/` prefixes via `ArgumentTokenizer`, validates urgency values with `ParserUtil#parseUrgencyLevel` and symptom names with `ParserUtil#parseSymptom`, and builds a **`Predicate<Person>`**. If the user leaves arguments empty, it returns a `ListCommand` that uses `Model#PREDICATE_SHOW_ALL_PERSONS`, mimicking the behaviour of the original List feature.
+* **`ListCommand#execute(Model)`** — Calls **`Model#updateFilteredPersonList(predicate)`**, then formats feedback from the size of **`Model#getFilteredPersonList()`** (success with count, empty book message, or **`CommandException`** when a filter matches no one).
+
+Unprefixed text after `list` (e.g. `list fever`) is **rejected** so that filtering stays explicit and consistent with the rest of the CLI.
+
+**Combining filters:** When both urgency and symptom criteria are present, a person must match **both** dimensions (logical **AND**). Multiple `u/` or `s/` repetitions are normalized to sets; within each set, a match on **any** listed urgency (respectively symptom) is enough.
+
+**Data and undo:** Listing does **not** change stored patient data; it only updates the **filtered view** in the model. `ListCommand` does not override `Command#isUndoable()`, so it remains **non-undoable**, like `find`.
+
+Given below is a example usage scenario.
+
+**Step 1.** The user previously ran a command that narrowed the UI (for example `find`), and wants to see every patient again. They execute `list` with no parameters. `ListCommandParser` returns a `ListCommand` with `PREDICATE_SHOW_ALL_PERSONS`; after execution, the UI shows the full list.
+
+**Step 2.** The user executes `list u/high` to focus on high-urgency patients. The parser builds a predicate that keeps only persons whose urgency string matches `high`; `Model#updateFilteredPersonList` updates the `FilteredList`.
+
+**Step 3.** The user executes `list u/high s/fever`. The parser combines predicates so that only persons who are **both** high urgency **and** have a fever symptom (case-insensitive) remain visible.
+
+<box type="info" seamless>
+
+**Note:** If the address book is empty, `list` with no filter returns an empty-list message. If filters are provided but **no** person matches, `ListCommand` throws a **`CommandException`** so the user knows the criteria returned no matches rather than the database is empty.
+
+</box>
+
+The class diagram below summarizes the main types involved in the list feature:
+
+<puml src="diagrams/ListFeatureClassDiagram.puml" width="500" />
+
+The following sequence diagram shows how a filtered `list` command flows through the **Logic** component (example: `list u/high`):
+
+<puml src="diagrams/ListSequenceDiagram-Logic.puml" alt="ListSequenceDiagram-Logic" />
+
+How **`Model#updateFilteredPersonList`** updates the view is shown below (concrete class **`ModelManager`** delegates to JavaFX **`FilteredList`**):
+
+<puml src="diagrams/ListSequenceDiagram-Model.puml" alt="ListSequenceDiagram-Model" />
+
+The activity diagram below summarizes parsing and execution outcomes:
+
+<puml src="diagrams/ListActivityDiagram.puml" width="550" />
+
+#### Design considerations
+
+**Aspect: Strict prefixes vs free-text filtering**
+
+* **Alternative 1 (current choice):** Require `u/` and `s/`; reject unprefixed arguments.
+    * *Pros:* Unambiguous parsing; aligns with `add` / `update` style; fewer accidental partial matches.
+    * *Cons:* Slightly more typing than a single free-text query.
+
+* **Alternative 2:** Accept raw keywords (e.g. `list fever`) and guess intent.
+    * *Pros:* Faster for casual typing.
+    * *Cons:* Ambiguity between urgency labels, symptom names, and future fields; worse error messages.
+
 ### \[Proposed\] Undo/redo feature
 
 #### Proposed Implementation
