@@ -16,9 +16,14 @@ import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.commands.FindCommand;
+import seedu.address.model.person.DoctorName;
 import seedu.address.model.person.DoctorNameContainsKeywordsPredicate;
+import seedu.address.model.person.Email;
 import seedu.address.model.person.EmailContainsKeywordsPredicate;
+import seedu.address.model.person.Ic;
+import seedu.address.model.person.Name;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
+import seedu.address.model.person.Phone;
 
 public class FindCommandParserTest {
 
@@ -48,13 +53,36 @@ public class FindCommandParserTest {
     }
 
     @Test
-    public void parse_validArgs_returnsFindCommand() {
-        // no leading and trailing whitespaces
-        FindCommand expectedFindCommand = getExpectedNameFindCommand();
-        assertParseSuccess(parser, "Alice Bob", expectedFindCommand);
+    public void parse_unprefixedName_throwsParseException() {
+        assertParseFailure(parser, "Alice Bob",
+                "Find requires at least one search prefix. Only pn/, ic/, p/, e/, and d/ are allowed.\n"
+                        + FindCommand.MESSAGE_USAGE);
+        assertParseFailure(parser, " \n Alice \n \t Bob  \t",
+                "Find requires at least one search prefix. Only pn/, ic/, p/, e/, and d/ are allowed.\n"
+                        + FindCommand.MESSAGE_USAGE);
+    }
 
-        // multiple whitespaces between keywords
-        assertParseSuccess(parser, " \n Alice \n \t Bob  \t", expectedFindCommand);
+    @Test
+    public void parse_unknownPrefix_throwsParseException() {
+        String unknownPrefixMessage = "Find only accepts these prefixes: pn/, ic/, p/, e/, and d/.\n"
+                + FindCommand.MESSAGE_USAGE;
+        assertParseFailure(parser, " n/asthma", unknownPrefixMessage);
+        assertParseFailure(parser, " nk/family", unknownPrefixMessage);
+        // Prefix at start of args (no leading space) after trim — still rejected
+        assertParseFailure(parser, "x/unrecognised", unknownPrefixMessage);
+    }
+
+    @Test
+    public void parse_preambleBeforePrefix_throwsParseException() {
+        assertParseFailure(parser, " extra pn/Alice",
+                "Text before the first search prefix is not allowed. Start with a prefix such as pn/ or ic/.\n"
+                        + FindCommand.MESSAGE_USAGE);
+    }
+
+    @Test
+    public void parse_unknownPrefixInsideNameValue_throwsParseException() {
+        assertParseFailure(parser, " pn/Alice n/secret",
+                "Find only accepts these prefixes: pn/, ic/, p/, e/, and d/.\n" + FindCommand.MESSAGE_USAGE);
     }
 
     @Test
@@ -88,8 +116,49 @@ public class FindCommandParserTest {
     }
 
     @Test
+    public void parse_invalidIcPrefix_throwsParseException() {
+        assertParseFailure(parser, " ic/S1234567", Ic.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
+    public void parse_invalidDoctorPrefix_throwsParseException() {
+        assertParseFailure(parser, " d/John123", DoctorName.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, " d/Dr@Smith", DoctorName.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, " d/@", DoctorName.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
+    public void parse_invalidPatientNamePrefix_throwsParseException() {
+        assertParseFailure(parser, " pn/John123", Name.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, " pn/Alice@Bob", Name.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, " pn/@", Name.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
+    public void parse_invalidLegacyPatientName_throwsParseException() {
+        assertParseFailure(parser, "@", Name.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "John123", Name.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, "Alice @Bob", Name.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
     public void parse_validPhonePrefix_doesNotThrow() {
         assertDoesNotThrow(() -> parser.parse(" p/91234567"));
+    }
+
+    @Test
+    public void parse_invalidPhoneTooShort_throwsParseException() {
+        assertParseFailure(parser, " p/1234567", Phone.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
+    public void parse_invalidPhoneTooLong_throwsParseException() {
+        assertParseFailure(parser, " p/123456789", Phone.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
+    public void parse_invalidPhoneNonNumeric_throwsParseException() {
+        assertParseFailure(parser, " p/91234abc", Phone.MESSAGE_CONSTRAINTS);
     }
 
     @Test
@@ -118,6 +187,17 @@ public class FindCommandParserTest {
     public void parse_emptyEmailPrefix_throwsParseException() {
         assertParseFailure(parser, " e/   ",
                 String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
+    }
+
+    @Test
+    public void parse_invalidEmailPrefix_throwsParseException() {
+        assertParseFailure(parser, " e/not-an-email", Email.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, " e/bob!yahoo", Email.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
+    public void parse_emailPrefixOnlyAtSymbol_throwsParseException() {
+        assertParseFailure(parser, " e/@", Email.MESSAGE_CONSTRAINTS);
     }
 
     @Test

@@ -15,7 +15,6 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_SYMPTOM;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_URGENCY;
 
 import seedu.address.commons.util.ToStringBuilder;
-import seedu.address.logic.Messages;
 import seedu.address.logic.commands.exceptions.CommandException;
 import seedu.address.model.Model;
 import seedu.address.model.person.Person;
@@ -56,7 +55,7 @@ public class AddCommand extends Command {
             + PREFIX_SYMPTOM + "cough "
             + PREFIX_NOTES + "Does not like to eat veggies";
 
-    public static final String MESSAGE_SUCCESS = "New person added: %1$s";
+    public static final String MESSAGE_SUCCESS = "You have added %1$s who has an urgency level of %2$s.";
     public static final String MESSAGE_DUPLICATE_PERSON = "This person already exists in the address book";
 
     private final Person toAdd;
@@ -85,7 +84,7 @@ public class AddCommand extends Command {
 
         model.addPerson(toAdd);
         wasExecuted = true;
-        return new CommandResult(String.format(MESSAGE_SUCCESS, Messages.format(toAdd)));
+        return new CommandResult(String.format(MESSAGE_SUCCESS, toAdd.getName(), toAdd.getUrgencyLevel()));
     }
 
     @Override
