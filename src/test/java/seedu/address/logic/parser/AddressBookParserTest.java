@@ -73,10 +73,17 @@ public class AddressBookParserTest {
     @Test
     public void parseCommand_find() throws Exception {
         List<String> keywords = Arrays.asList("foo", "bar", "baz");
-        FindCommand command = (FindCommand) parser.parseCommand(
-                FindCommand.COMMAND_WORD + " " + keywords.stream().collect(Collectors.joining(" ")));
+        String arguments = " pn/" + keywords.stream().collect(Collectors.joining(" "));
+        FindCommand command = (FindCommand) parser.parseCommand(FindCommand.COMMAND_WORD + arguments);
         assertEquals(new FindCommand(new NameContainsKeywordsPredicate(keywords),
                 "Patient Name: foo bar baz"), command);
+    }
+
+    @Test
+    public void parseCommand_findUnrecognisedPrefix_throwsParseException() {
+        assertThrows(ParseException.class,
+                "Find only accepts these prefixes: pn/, ic/, p/, e/, and d/.\n" + FindCommand.MESSAGE_USAGE, ()
+                -> parser.parseCommand(FindCommand.COMMAND_WORD + " x/keyword"));
     }
 
     @Test

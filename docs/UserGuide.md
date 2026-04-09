@@ -178,7 +178,7 @@ Allows triage coordinators to locate specific patient records using various iden
 **Format:** `find [pn/<PATIENT_NAME>] [ic/<IC>] [p/<PATIENT_PHONE>] [e/<EMAIL>] [d/<DOCTOR>]`
 
 * Finds patients whose identifiers match the given keywords.
-* At least one identifier must be provided.
+* At least one identifier must be provided, each using a prefix: `pn/`, `ic/`, `p/`, `e/`, or `d/`. Unprefixed text and other prefixes (e.g. `n/` for notes) are not accepted.
 * The search is case-insensitive.
 * Leading and trailing spaces are ignored/trimmed.
 * Only full words will be matched for names (e.g. `Han` will not match `Hans`).
