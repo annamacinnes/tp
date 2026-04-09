@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.model.person.DoctorNameContainsKeywordsPredicate;
+import seedu.address.model.person.Email;
 import seedu.address.model.person.EmailContainsKeywordsPredicate;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 
@@ -118,6 +119,17 @@ public class FindCommandParserTest {
     public void parse_emptyEmailPrefix_throwsParseException() {
         assertParseFailure(parser, " e/   ",
                 String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
+    }
+
+    @Test
+    public void parse_invalidEmailPrefix_throwsParseException() {
+        assertParseFailure(parser, " e/not-an-email", Email.MESSAGE_CONSTRAINTS);
+        assertParseFailure(parser, " e/bob!yahoo", Email.MESSAGE_CONSTRAINTS);
+    }
+
+    @Test
+    public void parse_emailPrefixOnlyAtSymbol_throwsParseException() {
+        assertParseFailure(parser, " e/@", Email.MESSAGE_CONSTRAINTS);
     }
 
     @Test

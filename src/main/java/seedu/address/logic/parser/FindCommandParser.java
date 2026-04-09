@@ -14,6 +14,7 @@ import java.util.function.Predicate;
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.person.DoctorNameContainsKeywordsPredicate;
+import seedu.address.model.person.Email;
 import seedu.address.model.person.EmailContainsKeywordsPredicate;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
@@ -114,6 +115,11 @@ public class FindCommandParser implements Parser<FindCommand> {
                         String.format(MESSAGE_INVALID_COMMAND_FORMAT, FindCommand.MESSAGE_USAGE));
             }
             List<String> emailKeywords = Arrays.asList(emailArg.split("\\s+"));
+            for (String keyword : emailKeywords) {
+                if (!Email.isValidEmail(keyword)) {
+                    throw new ParseException(Email.MESSAGE_CONSTRAINTS);
+                }
+            }
             Predicate<Person> emailPredicate = new EmailContainsKeywordsPredicate(emailKeywords);
             predicate = predicate == null ? emailPredicate : predicate.or(emailPredicate);
             if (criteriaBuilder.length() > 0) {
