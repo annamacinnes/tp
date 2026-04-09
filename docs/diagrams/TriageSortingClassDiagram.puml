@@ -4,22 +4,19 @@ skinparam arrowThickness 1.1
 skinparam arrowColor MODEL_COLOR
 skinparam classBackgroundColor MODEL_COLOR
 
-package Model <<Rectangle>> {
-    package person <<Rectangle>> {
-        class Person {
-            + compareTo(other: Person): int
-        }
-        class UrgencyLevel {
-            + compareTo(other: UrgencyLevel): int
-        }
-        class Ic {
-            + compareTo(other: Ic): int
-        }
-    }
+' Define Classes and Interfaces
+class Person {
+    + compareTo(other: Person): int
+}
+class UrgencyLevel {
+    + compareTo(other: UrgencyLevel): int
+}
+class Ic {
+    + compareTo(other: Ic): int
+}
 
-    interface "Comparable" as Comparable <<interface>> {
-        + compareTo(other: T): int
-    }
+interface "Comparable" as Comparable <<interface>> {
+    + compareTo(other: T): int
 }
 
 ' Realization: Dashed lines with hollow triangles
@@ -31,7 +28,7 @@ Ic .up.|> Comparable
 Person *--> "1" UrgencyLevel
 Person *--> "1" Ic
 
-' Layout alignment
+' Layout alignment (Keeps them horizontal)
 UrgencyLevel -[hidden]right-> Person
 Person -[hidden]right-> Ic
 
