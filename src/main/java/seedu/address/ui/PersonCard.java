@@ -65,8 +65,8 @@ public class PersonCard extends UiPart<Region> {
         id.setText(displayedIndex + ". ");
         name.setText(person.getName().fullName);
         phone.setText("Hp: " + person.getPhone().value);
-        address.setText(person.getAddress().value);
-        email.setText(person.getEmail().value);
+        address.setText("Address: " + person.getAddress().value);
+        email.setText("Email: " + person.getEmail().value);
         nextOfKinPhone.setText("NOK phone: " + person.getNextOfKinPhone().toString());
         doctorName.setText("Doctor: " + person.getDoctorName().toString());
         nextOfKin.setText("NOK: " + person.getNextOfKin().toString());
@@ -80,9 +80,16 @@ public class PersonCard extends UiPart<Region> {
 
         person.getSymptoms().stream()
                 .sorted(Comparator.comparing(symptom -> symptom.symptomName))
-                .forEach(symptom -> symptoms.getChildren().add(new Label(symptom.symptomName)));
+                .forEach(symptom -> symptoms.getChildren().add(createSymptomLabel(symptom.symptomName)));
 
         notes.setText("Notes: " + person.getNotes().getValue());
+    }
+
+    private Label createSymptomLabel(String symptomName) {
+        Label symptomLabel = new Label(symptomName);
+        symptomLabel.setWrapText(true);
+        symptomLabel.setMaxWidth(180);
+        return symptomLabel;
     }
 
     /**

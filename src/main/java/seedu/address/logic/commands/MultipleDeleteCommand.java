@@ -5,6 +5,7 @@ import static seedu.address.logic.Messages.getErrorMessageForDuplicateIndices;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import seedu.address.commons.core.index.Index;
@@ -21,25 +22,27 @@ public class MultipleDeleteCommand extends DeleteCommand {
 
     public static final String MESSAGE_USAGE = COMMAND_WORD
             + ": Deletes the people identified by the index numbers used in the displayed person list.\n"
-            + "Parameters: INDEX,INDEX[,INDEX,...] (must be unique positive integers)\n"
+            + "Parameters: <INDEX>,<INDEX>[,<INDEX>,...] (must be unique positive integers)\n"
             + "Example: " + COMMAND_WORD + " 1,2,4";
 
     private final Index[] targetIndices;
     private Person[] deletedPersons;
+    private Person[] updatedPersons;
     private boolean wasExecuted = false;
+    private boolean isFieldDeletion = false;
 
     public MultipleDeleteCommand(Index... targetIndices) {
-        this(targetIndices, Set.of());
+        this(targetIndices, Map.of());
     }
 
     /**
      * Creates a MultipleDeleteCommand to delete the specified people.
      *
      * @param targetIndices The indices of the people to delete.
-     * @param prefixes The prefixes indicating which fields to delete (if any).
+     * @param prefixesMap A map of prefixes to their corresponding values for field deletion (if any).
      */
-    public MultipleDeleteCommand(Index[] targetIndices, Set<Prefix> prefixes) {
-        super(prefixes);
+    public MultipleDeleteCommand(Index[] targetIndices, Map<Prefix, List<String>> prefixesMap) {
+        super(prefixesMap);
         this.targetIndices = targetIndices;
     }
 
@@ -63,13 +66,17 @@ public class MultipleDeleteCommand extends DeleteCommand {
         StringBuilder deletedPersonsString = new StringBuilder();
 
         if (!getPrefixes().isEmpty()) {
-            Person[] updatedPersons = getUpdatedPersons(personsToDelete);
+            Person[] updated = getUpdatedPersons(personsToDelete);
+            this.updatedPersons = updated;
             for (int i = 0; i < personsToDelete.length; i++) {
                 Person person = personsToDelete[i];
-                Person updatedPerson = updatedPersons[i];
+                Person updatedPerson = updated[i];
                 model.setPerson(person, updatedPerson);
                 deletedPersonsString.append("\n" + Messages.format(updatedPerson));
             }
+            this.deletedPersons = personsToDelete;
+            isFieldDeletion = true;
+            wasExecuted = true;
             return new CommandResult(String.format(MESSAGE_DELETE_FIELD_SUCCESS, deletedPersonsString));
         }
 
@@ -87,8 +94,21 @@ public class MultipleDeleteCommand extends DeleteCommand {
     public void undo(Model model) throws CommandException {
         requireNonNull(model);
         if (wasExecuted && deletedPersons != null) {
-            for (Person person : deletedPersons) {
-                model.addPerson(person);
+            if (isFieldDeletion) {
+                for (int i = 0; i < deletedPersons.length; i++) {
+                    Person originalPerson = deletedPersons[i];
+                    Person currentPerson = model.getFilteredPersonList().stream()
+                            .filter(p -> p.isSamePerson(originalPerson))
+                            .findFirst()
+                            .orElse(null);
+                    if (currentPerson != null) {
+                        model.setPerson(currentPerson, originalPerson);
+                    }
+                }
+            } else {
+                for (Person person : deletedPersons) {
+                    model.addPerson(person);
+                }
             }
         }
     }

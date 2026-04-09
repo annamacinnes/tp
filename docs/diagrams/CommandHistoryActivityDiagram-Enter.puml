@@ -1,0 +1,20 @@
+@startuml
+skin rose
+skinparam ActivityFontSize 15
+skinparam ArrowFontSize 12
+start
+
+:User enters command in the command box;
+:Execute command by pressing Enter key;
+
+if () then ([Successfully executed])
+    : Trim the command;
+    : Remove any duplicated commands in the command history;
+    : Add the trimmed command to the command history;
+else ([Not successfully executed])
+    : Do not add command to the command history;
+endif
+
+stop
+
+@enduml

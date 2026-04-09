@@ -3,6 +3,7 @@ package seedu.address.logic.commands;
 import static java.util.Objects.requireNonNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import seedu.address.commons.core.index.Index;
@@ -19,16 +20,17 @@ public class RangeDeleteCommand extends DeleteCommand {
 
     public static final String MESSAGE_USAGE = COMMAND_WORD
             + ": Deletes the people identified by the index numbers used in the displayed person list.\n"
-            + "Parameters: START_INDEX-END_INDEX (must be positive integers and START_INDEX <= END_INDEX)\n"
+            + "Parameters: <START_INDEX>-<END_INDEX> (must be positive integers and START_INDEX <= END_INDEX)\n"
             + "Example: " + COMMAND_WORD + " 1-3";
 
     private final Index startIndex;
     private final Index endIndex;
     private Person[] deletedPersons;
     private boolean wasExecuted = false;
+    private boolean isFieldDeletion = false;
 
     public RangeDeleteCommand(Index startIndex, Index endIndex) {
-        this(startIndex, endIndex, Set.of());
+        this(startIndex, endIndex, Map.of());
     }
 
     /**
@@ -36,10 +38,10 @@ public class RangeDeleteCommand extends DeleteCommand {
      *
      * @param startIndex The starting index of the range of people to delete.
      * @param endIndex The ending index of the range of people to delete.
-     * @param prefixes The prefixes indicating which fields to delete (if any).
+     * @param prefixesMap A map of prefixes to their corresponding values for field deletion (if any).
      */
-    public RangeDeleteCommand(Index startIndex, Index endIndex, Set<Prefix> prefixes) {
-        super(prefixes);
+    public RangeDeleteCommand(Index startIndex, Index endIndex, Map<Prefix, List<String>> prefixesMap) {
+        super(prefixesMap);
         this.startIndex = startIndex;
         this.endIndex = endIndex;
     }
@@ -71,6 +73,7 @@ public class RangeDeleteCommand extends DeleteCommand {
                 model.setPerson(person, updatedPerson);
                 deletedPersonsString.append("\n" + Messages.format(updatedPerson));
             }
+            isFieldDeletion = true;
             wasExecuted = true;
             return new CommandResult(String.format(MESSAGE_DELETE_FIELD_SUCCESS, deletedPersonsString));
         }
@@ -110,8 +113,20 @@ public class RangeDeleteCommand extends DeleteCommand {
     public void undo(Model model) throws CommandException {
         requireNonNull(model);
         if (wasExecuted && deletedPersons != null) {
-            for (Person person : deletedPersons) {
-                model.addPerson(person);
+            if (isFieldDeletion) {
+                for (Person originalPerson : deletedPersons) {
+                    Person currentPerson = model.getFilteredPersonList().stream()
+                            .filter(p -> p.isSamePerson(originalPerson))
+                            .findFirst()
+                            .orElse(null);
+                    if (currentPerson != null) {
+                        model.setPerson(currentPerson, originalPerson);
+                    }
+                }
+            } else {
+                for (Person person : deletedPersons) {
+                    model.addPerson(person);
+                }
             }
         }
     }

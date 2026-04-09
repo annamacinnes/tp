@@ -3,6 +3,7 @@ package seedu.address.logic.commands;
 import static java.util.Objects.requireNonNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import seedu.address.commons.core.index.Index;
@@ -19,25 +20,26 @@ public class SingleDeleteCommand extends DeleteCommand {
 
     public static final String MESSAGE_USAGE = COMMAND_WORD
             + ": Deletes the person identified by the index number used in the displayed person list.\n"
-            + "Parameters: INDEX (must be a positive integer)\n"
+            + "Parameters: <INDEX> (must be a positive integer)\n"
             + "Example: " + COMMAND_WORD + " 1";
 
     private final Index targetIndex;
     private Person deletedPerson;
     private boolean wasExecuted = false;
+    private boolean isFieldDeletion = false;
 
     public SingleDeleteCommand(Index targetIndex) {
-        this(targetIndex, Set.of());
+        this(targetIndex, Map.of());
     }
 
     /**
      * Creates a SingleDeleteCommand to delete the specified person.
      *
      * @param targetIndex The index of the person to delete.
-     * @param prefixes The prefixes indicating which fields to delete (if any).
+     * @param prefixesMap A map of prefixes to their corresponding values for field deletion (if any).
      */
-    public SingleDeleteCommand(Index targetIndex, Set<Prefix> prefixes) {
-        super(prefixes);
+    public SingleDeleteCommand(Index targetIndex, Map<Prefix, List<String>> prefixesMap) {
+        super(prefixesMap);
         this.targetIndex = targetIndex;
     }
 
@@ -68,6 +70,8 @@ public class SingleDeleteCommand extends DeleteCommand {
             assert updatedPerson.isSamePerson(personToDelete)
                     : "Updated person should be have the same identity as original person.";
             model.setPerson(personToDelete, updatedPerson);
+            isFieldDeletion = true;
+            wasExecuted = true;
             return new CommandResult(String.format(MESSAGE_DELETE_FIELD_SUCCESS, Messages.format(updatedPerson)));
         }
 
@@ -80,7 +84,14 @@ public class SingleDeleteCommand extends DeleteCommand {
     public void undo(Model model) throws CommandException {
         requireNonNull(model);
         if (wasExecuted && deletedPerson != null) {
-            model.addPerson(deletedPerson);
+            if (isFieldDeletion) {
+                model.setPerson(model.getFilteredPersonList().stream()
+                        .filter(p -> p.isSamePerson(deletedPerson))
+                        .findFirst()
+                        .orElse(null), deletedPerson);
+            } else {
+                model.addPerson(deletedPerson);
+            }
         }
     }
 

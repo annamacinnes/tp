@@ -14,6 +14,9 @@ pageNav: 3
 
 _{ list here sources of all reused/adapted ideas, code, documentation, and third-party libraries -- include links to the original source as well }_
 
+* This project is based on the [AddressBook Level-3](https://se-education.org/addressbook-level3) project created by the [SE-EDU initiative](https://se-education.org).
+* Libraries used: [JavaFX](https://openjfx.io/), [Jackson](https://github.com/FasterXML/jackson), [JUnit5](https://github.com/junit-team/junit5).
+
 --------------------------------------------------------------------------------------------------------------------
 
 ## **Setting up, getting started**
@@ -117,7 +120,7 @@ How the parsing works:
 ### Model component
 **API** : [`Model.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/model/Model.java)
 
-<puml src="diagrams/ModelClassDiagram.puml" width="450" />
+<puml src="diagrams/ModelClassDiagram.puml" width="1500" />
 
 
 The `Model` component,
@@ -129,9 +132,9 @@ The `Model` component,
 
 <box type="info" seamless>
 
-**Note:** An alternative (arguably, a more OOP) model is given below. It has a `Tag` list in the `AddressBook`, which `Person` references. This allows `AddressBook` to only require one `Tag` object per unique tag, instead of each `Person` needing their own `Tag` objects.<br>
+**Note:** An alternative (arguably, a more OOP) model is given below. It has a `Symptom` list in the `AddressBook`, which `Person` references. This allows `AddressBook` to only require one `Symptom` object per unique symptom, instead of each `Person` needing their own `Symptom` objects.<br>
 
-<puml src="diagrams/BetterModelClassDiagram.puml" width="450" />
+<puml src="diagrams/BetterModelClassDiagram.puml" width="1500" />
 
 </box>
 
@@ -197,6 +200,125 @@ When a user executes a command that alters the patient list (like `add` or `upda
     * *Cons:* Highly dangerous in a medical triage context. If a user forgets to type `sort`, an `EXTREME` urgency patient might be left at the bottom of the list, leading to critical delays in care.
 
 **Reason for choosing Alternative 1:** In a clinical setting, data accuracy and immediate visibility of critical patients strictly outweigh the minor performance cost of automatic sorting. "Security by Design" principles dictate that the system should fail-safe; automatically sorting ensures no critical patient is ever accidentally hidden.
+
+### List feature
+
+#### Implementation
+
+The list mechanism lets users view either **all** patients or a **filtered** subset by **urgency level** (`u/`) and/or **symptoms** (`s/`). It is facilitated by **`ListCommand`** and **`ListCommandParser`**, which implement the following behaviour:
+
+* **`ListCommandParser#parse(String)`** — Tokenizes `u/` and `s/` prefixes via `ArgumentTokenizer`, validates urgency values with `ParserUtil#parseUrgencyLevel` and symptom names with `ParserUtil#parseSymptom`, and builds a **`Predicate<Person>`**. If the user leaves arguments empty, it returns a `ListCommand` that uses `Model#PREDICATE_SHOW_ALL_PERSONS`, mimicking the behaviour of the original List feature.
+* **`ListCommand#execute(Model)`** — Calls **`Model#updateFilteredPersonList(predicate)`**, then formats feedback from the size of **`Model#getFilteredPersonList()`** (success with count, empty book message, or **`CommandException`** when a filter matches no one).
+
+Unprefixed text after `list` (e.g. `list fever`) is **rejected** so that filtering stays explicit and consistent with the rest of the CLI.
+
+**Combining filters:** When both urgency and symptom criteria are present, a person must match **both** dimensions (logical **AND**). Multiple `u/` or `s/` repetitions are normalized to sets; within each set, a match on **any** listed urgency (respectively symptom) is enough.
+
+**Data and undo:** Listing does **not** change stored patient data; it only updates the **filtered view** in the model. `ListCommand` does not override `Command#isUndoable()`, so it remains **non-undoable**, like `find`.
+
+Given below is a example usage scenario.
+
+**Step 1.** The user previously ran a command that narrowed the UI (for example `find`), and wants to see every patient again. They execute `list` with no parameters. `ListCommandParser` returns a `ListCommand` with `PREDICATE_SHOW_ALL_PERSONS`; after execution, the UI shows the full list.
+
+**Step 2.** The user executes `list u/high` to focus on high-urgency patients. The parser builds a predicate that keeps only persons whose urgency string matches `high`; `Model#updateFilteredPersonList` updates the `FilteredList`.
+
+**Step 3.** The user executes `list u/high s/fever`. The parser combines predicates so that only persons who are **both** high urgency **and** have a fever symptom (case-insensitive) remain visible.
+
+<box type="info" seamless>
+
+**Note:** If the address book is empty, `list` with no filter returns an empty-list message. If filters are provided but **no** person matches, `ListCommand` throws a **`CommandException`** so the user knows the criteria returned no matches rather than the database is empty.
+
+</box>
+
+The class diagram below summarizes the main types involved in the list feature:
+
+<puml src="diagrams/ListFeatureClassDiagram.puml" width="500" />
+
+The following sequence diagram shows how a filtered `list` command flows through the **Logic** component (example: `list u/high`):
+
+<puml src="diagrams/ListSequenceDiagram-Logic.puml" alt="ListSequenceDiagram-Logic" />
+
+How **`Model#updateFilteredPersonList`** updates the view is shown below (concrete class **`ModelManager`** delegates to JavaFX **`FilteredList`**):
+
+<puml src="diagrams/ListSequenceDiagram-Model.puml" alt="ListSequenceDiagram-Model" />
+
+The activity diagram below summarizes parsing and execution outcomes:
+
+<puml src="diagrams/ListActivityDiagram.puml" width="550" />
+
+#### Design considerations
+
+**Aspect: Strict prefixes vs free-text filtering**
+
+* **Alternative 1 (current choice):** Require `u/` and `s/`; reject unprefixed arguments.
+    * *Pros:* Unambiguous parsing; aligns with `add` / `update` style; fewer accidental partial matches.
+    * *Cons:* Slightly more typing than a single free-text query.
+
+* **Alternative 2:** Accept raw keywords (e.g. `list fever`) and guess intent.
+    * *Pros:* Faster for casual typing.
+    * *Cons:* Ambiguity between urgency labels, symptom names, and future fields; worse error messages.
+
+### Command History Navigation
+
+#### Implementation
+
+The command history navigation feature allows users to cycle through previously successfully executed commands using the up/down arrow keys. The command history is kept so that no duplicated commands. This is implemented in the `CommandHistory` class, which maintains a list of previously executed commands strings that are trimmed to remove leading and trailing whitespaces, a pointer to the current position in that history, and the current user input being typed. The command history is session-based, meaning that the command history is cleared when the app is closed and does not persist across sessions.
+
+The `CommandHistory` class provides the following methods:
+* `CommandHistory#add(String command)` — Adds a new command to the history and resets the pointer to the end of the list.
+* `CommandHistory#getPreviousCommand(String currentInput)` — Moves the pointer up to the previous command and returns it. If the pointer is already at the top of the history, it remains there and returns the same command.
+* `CommandHistory#getNextCommand()` — Moves the pointer down to the next command and returns it. If the pointer is already at the end of the history, it remains there and returns an empty string (indicating no command).
+* `CommandHistory#removeAnyDuplicateCommands(String command)` — Removes any existing occurrence of the given command from the history to prevent duplicates.
+
+<box type="info" seamless>
+
+* If there is a duplicate command in the history, it is removed before adding the new command. This ensures that the history contains only unique commands, and the most recent occurrence of a command is what gets stored.
+
+* Duplicate commands are identified using case-insensitive comparison after trimming leading and trailing whitespace. A command is considered a duplicate only if it **exactly** matches an existing command in the history list.
+
+</box>
+
+The `CommandBox` class listens for key presses and interacts with the `CommandHistory` to update the command input field accordingly when the user presses the up/down arrow keys.
+
+Here is a class diagram summarizing the main types involved in the command history feature:
+
+<puml src="diagrams/CommandHistoryClassDiagram.puml" width="300" />
+
+Given below is an example usage scenario. Assume there are already some patient records in the address book before the user executes any command.
+
+**Step 1.** The user executes the command `add pn/Alice …​`. The `CommandHistory` adds this command to its history list and resets the pointer to the end.
+
+**Step 2.** The user executes the command `delete 1`. The `CommandHistory` adds this command to its history list and resets the pointer to the end. 
+
+**Step 3.** The user enters a partial command `add pn/Bob` but has not executed it yet. This partial input is stored in the `CommandHistory` as the current user input, but it is not added to the history list until it is executed.
+
+**Step 4.** The user now presses the up arrow key. The `CommandHistory` moves the pointer up to the previous command (`delete 1`) and returns it, which is then displayed in the command input field.
+
+**Step 5.** The user presses the up arrow key again. The `CommandHistory` moves the pointer up to the previous command (`add pn/Alice …​`) and returns it, which is then displayed in the command input field.
+
+**Step 6.** The user presses the up arrow key again. Since the pointer is already at the top of the history, it remains there and returns the same command (`add pn/Alice …​`), which is displayed in the command input field.
+
+**Step 7.** The user now presses the down arrow key. The `CommandHistory` moves the pointer down to the next command (`delete 1`) and returns it, which is displayed in the command input field.
+
+**Step 8.** The user presses the down arrow key again. The `CommandHistory` moves the pointer down to the end of the history (since there are no more commands), and returns the initial partial command input (`add pn/Bob`), which is displayed in the command input field.
+
+Here is a sequence diagram showing how the command history navigation works when the user presses the up arrow key (Assuming there are already some commands in the history and that the previous command in the history is `delete 1`):
+
+<puml src="diagrams/CommandHistorySequenceDiagram.puml" alt="CommandHistorySequenceDiagram" />
+
+<box type="info" seamless>
+
+Note that `getPreviousCommand("")` method is taking in an empty string, that means that the user has not typed anything in the command box before pressing the up arrow key.
+
+</box>
+
+The following activity diagram summarizes the behavior of the command history navigation when the user presses the up/down arrow keys:
+
+<puml src="diagrams/CommandHistoryActivityDiagram-Up-Down.puml" width="400" />
+
+The following activity diagram summarizes the behavior of the command history navigation when the user enters a new command (e.g., `add pn/Charlie …​`) and executes it:
+
+<puml src="diagrams/CommandHistoryActivityDiagram-Enter.puml" width="600" />
 
 ### \[Proposed\] Undo/redo feature
 
@@ -291,10 +413,6 @@ The following activity diagram summarizes what happens when a user executes a ne
 
 _{more aspects and alternatives to be added}_
 
-### \[Proposed\] Data archiving
-
-_{Explain here how the data archiving feature will be implemented}_
-
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -314,7 +432,7 @@ _{Explain here how the data archiving feature will be implemented}_
 
 **Target user profile**:
 
-* has a need to manage a significant number of patient contacts
+* has a need to manage a significant number of patient records
 * prefer desktop apps over other types
 * can type fast
 * prefers typing to mouse interactions
@@ -329,39 +447,39 @@ accurate prioritisation in fast-paced, high-workload clinical environments.
 
 Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unlikely to have) - `*`
 
-| Priority | As a …​            | I want to …​                                                   | So that I can…​                                                                 |
-|----------|--------------------|----------------------------------------------------------------|---------------------------------------------------------------------------------|
-| `* * *`  | beginner user      | list all patients in the system                                | verify that the data I just entered was saved correctly.                        |
-| `* * *`  | beginner user      | exit the app safely                                            | be assured that the data entered into the app is saved when I end my shift.     |                                                                    |
-| `* * *`  | user               | add patient details                                            | start tracking those patients.                                                  |
-| `* * *`  | triage coordinator | update specific details of a patient (such as their urgency level, symptoms, or notes) | quickly keep records current as the patient moves through the triage process and their medical condition changes. |
-| `* * *`  | user               | remove patients                                                | remove duplicates or wrongly created records to keep it accurate.               |
+| Priority | As a …​            | I want to …​                                                                                 | So that I can…​                                                                                                                              |
+|----------|--------------------|----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| `* * *`  | beginner user      | list all patients in the system                                                              | verify that the data I just entered was saved correctly.                                                                                     |
+| `* * *`  | beginner user      | exit the app safely                                                                          | be assured that the data entered into the app is saved when I end my shift.                                                                  |                                                                    |
+| `* * *`  | user               | add patient details                                                                          | start tracking those patients.                                                                                                               |
+| `* * *`  | triage coordinator | update specific details of a patient (such as their urgency level, symptoms, or notes)       | quickly keep records current as the patient moves through the triage process and their medical condition changes.                            |
+| `* * *`  | user               | remove patients                                                                              | remove duplicates or wrongly created records to keep it accurate.                                                                            |
 | `* *`    | triage coordinator | search for patient records using different criteria (like Name, IC, Phone, or Urgency Level) | easily locate a specific patient in an emergency or find specific groups of patients without manually scrolling through the entire database. |
-| `* *`    | expert user        | use my up/down keyboard keys                                   | conveniently access previously entered commands in my history to execute again. |
-| `* *`    | expert user        | archive old patient records                                    | focus on the relevant patient records.                                          |
-| `* *`    | beginner user      | see a confirmation message after adding a patient              | be assured that a patient has been added to my contacts.                        |
-| `* *`    | beginner user      | use a help command                                             | easily understand the capabilities of ClinicConnect.                            |
-| `* *`    | beginner user      | reset the app to its initial state                             | safely experiment with the app.                                                 |
-| `* *`    | beginner user      | see instructions to help me correct my mistakes                | easily correct mistakes.                                                        |
-| `* *`    | user               | sort patients based on their urgency level                     | quickly identify which patient requires immediate care.                         |
-| `* *`    | expert user        | chain commands together in a single line (e.g., add … && list) | execute multiple actions without waiting for intermediate prompts.              |
-| `* *`    | user               | attach notes to patient contacts                               | capture contextual information.                                                 |
-| `* *`    | triage coordinator | perform batch edits or deletions                               | manage multiple patients efficiently.                                           |
-| `* *`    | user               | use shorter prefixes                                           | get things done quickly.                                                        |
-| `* *`    | user               | add an urgency level to each patient                           | know which patient requires immediate attention first.                          |
-| `* *`    | expert user        | use a one-line command format (e.g., add n/ p/ ic/ cond/)      | enter a patient's full clinical profile quickly in seconds.                     |
-| `*`      | beginner user      | undo a mistaken deletion from an entered command               | recover accidentally deleted data without re-entering everything.               |
-| `*`      | beginner user      | skip onboarding steps                                          | explore the application freely.                                                 |
-| `*`      | beginner user      | see the app populated with sample data                         | easily see how the app will look when it is in use.                             |
-| `*`      | beginner user      | cancel an action midway                                        | stay in control.                                                                |
-| `*`      | beginner user      | view a brief onboarding walkthrough                            | know what the app can do.                                                       |
-| `*`      | beginner user      | search for a patient by name or identifier                     | quickly find an existing contact.                                               |
-| `*`      | beginner user      | undo recent actions                                            | feel safe exploring the app.                                                    |
-| `*`      | expert user        | organize patients using symptoms                                   | categorise patients based on clinical priority or special needs.                |
-| `*`      | beginner user      | view what actions I have recently made                         | understand the current state of the database more accurately.                   |
-| `*`      | expert user        | use command shortcuts or aliases when entering patient details | maximize my efficiency in typing during peak hours.                             |
-| `*`      | expert user        | customise views or defaults                                    | the app matches my working habits.                                              |
-| `*`      | user               | manually save my data at any point                             | be assured that I saved my data.                                                |
+| `* *`    | expert user        | use my up/down keyboard keys                                                                 | conveniently access previously entered commands in my history to execute again.                                                              |
+| `* *`    | expert user        | archive old patient records                                                                  | focus on the relevant patient records.                                                                                                       |
+| `* *`    | beginner user      | see a confirmation message after adding a patient                                            | be assured that a patient has been added to my list .                                                                                        |
+| `* *`    | beginner user      | use a help command                                                                           | easily understand the capabilities of ClinicConnect.                                                                                         |
+| `* *`    | beginner user      | reset the app to its initial state                                                           | safely experiment with the app.                                                                                                              |
+| `* *`    | beginner user      | see instructions to help me correct my mistakes                                              | easily correct mistakes.                                                                                                                     |
+| `* *`    | user               | sort patients based on their urgency level                                                   | quickly identify which patient requires immediate care.                                                                                      |
+| `* *`    | expert user        | chain commands together in a single line (e.g., add … && list)                               | execute multiple actions without waiting for intermediate prompts.                                                                           |
+| `* *`    | user               | attach notes to patient records                                                              | capture contextual information.                                                                                                              |
+| `* *`    | triage coordinator | perform batch edits or deletions                                                             | manage multiple patients efficiently.                                                                                                        |
+| `* *`    | user               | use shorter prefixes                                                                         | get things done quickly.                                                                                                                     |
+| `* *`    | user               | add an urgency level to each patient                                                         | know which patient requires immediate attention first.                                                                                       |
+| `* *`    | expert user        | use a one-line command format (e.g., add n/ p/ ic/ cond/)                                    | enter a patient's full clinical profile quickly in seconds.                                                                                  |
+| `*`      | beginner user      | undo a mistaken deletion from an entered command                                             | recover accidentally deleted data without re-entering everything.                                                                            |
+| `*`      | beginner user      | skip onboarding steps                                                                        | explore the application freely.                                                                                                              |
+| `*`      | beginner user      | see the app populated with sample data                                                       | easily see how the app will look when it is in use.                                                                                          |
+| `*`      | beginner user      | cancel an action midway                                                                      | stay in control.                                                                                                                             |
+| `*`      | beginner user      | view a brief onboarding walkthrough                                                          | know what the app can do.                                                                                                                    |
+| `*`      | beginner user      | search for a patient by name or identifier                                                   | quickly find an existing patient record.                                                                                                     |
+| `*`      | beginner user      | undo recent actions                                                                          | feel safe exploring the app.                                                                                                                 |
+| `*`      | expert user        | organize patients using symptoms                                                             | categorise patients based on clinical priority or special needs.                                                                             |
+| `*`      | beginner user      | view what actions I have recently made                                                       | understand the current state of the database more accurately.                                                                                |
+| `*`      | expert user        | use command shortcuts or aliases when entering patient details                               | maximize my efficiency in typing during peak hours.                                                                                          |
+| `*`      | expert user        | customise views or defaults                                                                  | the app matches my working habits.                                                                                                           |
+| `*`      | user               | manually save my data at any point                                                           | be assured that I saved my data.                                                                                                             |
 
 *Use this [link](https://docs.google.com/spreadsheets/d/1rFhnT22PNdGMJaEn7YMBqhdyV8b7M9sdSiOgtJ5c6J8/edit?gid=1121925862#gid=1121925862) for the most updated user stories.*
 
@@ -581,14 +699,30 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unli
 1.  Should work on any _mainstream OS_ as long as it has Java `17` or above installed.
 2.  Should be able to hold up to 1000 persons without a noticeable sluggishness in performance for typical usage.
 3.  A user with above average typing speed for regular English text (i.e. not code, not system admin commands) should be able to accomplish most of the tasks faster using commands than using the mouse.
+4.  Should be fully operable using only the keyboard, with no mouse interaction required.
+5.  Should gracefully handle a corrupted or missing data file by starting with an empty address book, without crashing. 
+6.  Should not lose any patient data if the application is closed unexpectedly (e.g. power failure), as data is saved after every command.
 
 *{More to be added}*
 
 ### Glossary
 
-* **Mainstream OS**: Windows, Linux, Unix, MacOS
-* **Private contact detail**: A contact detail that is not meant to be shared with others
-
+* **Mainstream OS**: Windows, Linux, MacOS
+* **Above average typing speed**: 40 words per minute (wpm) or more, which is the average typing speed for regular English text.
+* **Patient record**: A record containing the details of a patient.
+* **Patient details**: The details of a patient, which include their name, phone number, address, email, IC number, attending doctor, urgency level, symptoms and notes.
+* **Triage coordinator**: A user who is responsible for managing the patient records and ensuring that patients are prioritized based on their urgency level.
+* **Expert user**: A user who is familiar with the app and its features, and can use it efficiently to manage patient records.
+* **Beginner user**: A user who is new to the app and may not be familiar with all its features, but can still use it to manage patient records with some guidance.
+* **User**: A user, which can be either a triage coordinator, an expert user or a beginner user.
+* **Address book**: The collection of patient records stored in the app, represented as an `AddressBook` object.
+* **Person/Patient**: A patient record in the address book, represented as a `Person` object. They are used interchangeably, but they refer to the same thing in the context of this app.
+* **Urgency**: A classification of a patient's medical severity. Valid levels are `EXTREME`, `HIGH`, `MODERATE`, and `LOW`, listed from highest to lowest priority.
+* **IC number**: A unique national identification number used to identify a patient (e.g. `T0123456B`). Used as the primary key to prevent duplicate patient records.
+* **Triage priority**: The computed order in which patients are ranked in the list, determined first by urgency level and then by IC number lexicographically as a tie-breaker.
+* **Filtered list**: The subset of patient records currently displayed in the UI after applying search or filter criteria. Does not affect the underlying stored data.
+* **Session**: A single run of the application from launch to close. Command history is session-based and does not persist across sessions.
+* **Next-of-kin**: An emergency contact associated with a patient record, including their name, phone number, and relationship to the patient.
 --------------------------------------------------------------------------------------------------------------------
 
 ## **Appendix: Instructions for manual testing**
@@ -608,7 +742,7 @@ testers are expected to do more *exploratory* testing.
 
     1. Download the jar file and copy into an empty folder
 
-    1. Double-click the jar file Expected: Shows the GUI with a set of sample contacts. The window size may not be optimum.
+    1. Double-click the jar file Expected: Shows the GUI with a set of sample patient records. The window size may not be optimum.
 
 1. Saving window preferences
 
@@ -619,6 +753,45 @@ testers are expected to do more *exploratory* testing.
 
 1. _{ more test cases …​ }_
 
+### Adding a person
+
+1. Adding a person with all fields
+    
+    1. Prerequisites: Address book has no duplicated patient record with the same IC number as the person being added.
+    2. Test case: `add pn/John Doe Jun Kai ic/T0123456B p/12345678 a/21 Serangan Road e/john@doe.com u/high d/Dr Tan Ah Beng nk/Mary Doe nkp/87654321 nkr/Mother s/Diabetic n/Admitted at 12pm`<br>
+        Expected: A new patient record is added to the list with the specified details. 
+
+2. Adding a person with only the required fields
+
+    1. Prerequisites: Address book has no duplicated patient record with the same IC number as the person being added.
+    2. Test case: `add pn/John Doe Jun Kai ic/T0123456B p/12345678 a/21 Serangan Road e/john@doe.com u/high d/Dr Tan Ah Beng nk/Mary Doe nkp/87654321 nkr/Mother` <br>
+        Expected: A new patient record is added to the list with the specified details. Notes is left empty. No symptoms are displayed.
+
+3. Adding a person with a missing required field to an empty address book
+
+    1. Prerequisites: Address book has no duplicated patient record with the same IC number as the person being added.
+    2. Test case: `add pn/John Doe Jun Kai p/12345678 a/21 Serangan Road e/john@doe.com u/high d/Dr Tan Ah Beng nk/Mary Doe nkp/87654321 nkr/Mother ` (missing IC prefix and the associated value)<br>
+       Expected: No patient record is added to the list. An error message is shown.
+
+4. Adding a person where a prefix is present but its associated value is missing
+
+   1. Prerequisites: Address book has no duplicated patient record with the same IC number as the person being added.
+   2. Test case: `add pn/John Doe Jun Kai ic/ p/12345678 a/21 Serangan Road e/john@doe.com u/high d/Dr Tan Ah Beng nk/Mary Doe nkp/87654321 nkr/Mother s/Diabetic n/Admitted at 12pm` (IC prefix is present but the associated value is missing)<br>
+       Expected: No patient record is added to the list. An error message is shown.
+
+5. Adding a person with duplicated compulsory prefixes
+
+    1. Prerequisites: Address book has no duplicated patient record with the same IC number as the person being added.
+    2. Test case: `add pn/John Doe Jun Kai ic/T0123456B p/87654321 p/12345678 a/21 Serangan Road e/john@doe.com u/high d/Dr Tan Ah Beng nk/Mary Doe nkp/87654321 nkr/Mother` (There are 2 phone prefixes, but only one is allowed)<br>
+       Expected: No patient record is added to the list. An error message is shown.
+
+6. Adding a duplicated person 
+
+   1. Prerequisites: There exist a patient record in the with the same IC number as the person being added.
+   2. Test case: `add pn/John Doe Jun Kai ic/T0123456B p/12345678 a/21 Serangan Road e/john@doe.com u/high d/Dr Tan Ah Beng nk/Mary Doe nkp/87654321 nkr/Mother` <br>
+      Expected: No patient record is added to the list. An error message is shown.
+
+
 ### Deleting a person
 
 1. Deleting a person while all persons are being shown
@@ -626,7 +799,7 @@ testers are expected to do more *exploratory* testing.
     1. Prerequisites: List all persons using the `list` command. Multiple persons in the list.
 
     1. Test case: `delete 1`<br>
-       Expected: First contact is deleted from the list. Details of the deleted contact shown in the status message. Timestamp in the status bar is updated.
+       Expected: First patient record is deleted from the list. Details of the deleted patient record shown in the status message. Timestamp in the status bar is updated.
 
     1. Test case: `delete 0`<br>
        Expected: No person is deleted. Error details shown in the status message. Status bar remains the same.
@@ -638,8 +811,16 @@ testers are expected to do more *exploratory* testing.
 
 ### Saving data
 
-1. Dealing with missing/corrupted data files
+1. Dealing with corrupted data files
 
-    1. _{explain how to simulate a missing/corrupted file, and the expected behavior}_
+   1. Locate the data file (e.g. `data/addressbook.json`) and open it with a text editor. Corrupt the data by changing the content to an invalid JSON format (e.g. delete a closing bracket).
+   
+   2. Re-launch the application.<br>
+      Expected: The app should start with an empty address book.
 
-1. _{ more test cases …​ }_
+2. Dealing with missing data files
+
+   1. Delete the data file (e.g. `data/addressbook.json`).
+    
+   2. Re-launch the application.<br>
+      Expected: The app should start with an empty address book.

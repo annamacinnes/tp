@@ -1,0 +1,20 @@
+@startuml
+skin rose
+skinparam ActivityFontSize 15
+skinparam ArrowFontSize 12
+start
+
+:User presses Up or Down Arrow Key;
+
+if () then ([Up Arrow Key])
+    : Get previous command;
+    : Display previous command;
+
+else ([Down Arrow Key])
+    : Get next command;
+    : Display next command;
+endif
+
+stop
+
+@enduml

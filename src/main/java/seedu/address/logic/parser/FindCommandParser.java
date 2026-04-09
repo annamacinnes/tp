@@ -9,16 +9,21 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_PATIENT_PHONE;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import seedu.address.logic.commands.FindCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
+import seedu.address.model.person.DoctorName;
 import seedu.address.model.person.DoctorNameContainsKeywordsPredicate;
+import seedu.address.model.person.Email;
 import seedu.address.model.person.EmailContainsKeywordsPredicate;
+import seedu.address.model.person.IcContainsKeywordsPredicate;
 import seedu.address.model.person.NameContainsKeywordsPredicate;
 import seedu.address.model.person.Person;
+import seedu.address.model.person.Phone;
 
 /**
  * Parses input arguments and creates a new FindCommand object
@@ -58,8 +63,8 @@ public class FindCommandParser implements Parser<FindCommand> {
         String trimmedArgs = args.trim();
         if (trimmedArgs.isEmpty()) {
             throw new ParseException("At least one parameter to search with must be provided. You "
-                + "can use the command 'find' with the following parameters: pn/NAME, ic/IC_NUMBER, p/PHONE_NUMBER, "
-                + "e/EMAIL, d/DOCTOR_NAME");
+                    + "can use the command 'find' with the following parameters: pn/<PATIENT_NAME>, ic/<IC>,"
+                    + "p/<PATIENT_PHONE>, e/<EMAIL>, d/<DOCTOR>");
         }
 
         assertNoUnknownPrefixTokens(args);

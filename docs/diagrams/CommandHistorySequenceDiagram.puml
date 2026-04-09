@@ -1,0 +1,22 @@
+@startuml
+!include style.puml
+
+actor "User" as User
+
+box UI UI_COLOR_T1
+participant ":CommandBox" as CommandBox UI_COLOR
+participant ":CommandHistory" as CommandHistory UI_COLOR
+end box
+
+User -> CommandBox : presses the 'Up' Arrow Key
+activate CommandBox
+
+CommandBox -> CommandHistory : getPreviousCommand("")
+activate CommandHistory
+CommandHistory --> CommandBox : "delete 1"
+deactivate CommandHistory
+
+CommandBox --> User : shows "delete 1"
+deactivate CommandBox
+
+@enduml
